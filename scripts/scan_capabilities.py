@@ -7,7 +7,7 @@ import json
 import re
 import sys
 import tomllib
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -31,6 +31,8 @@ HOST_LABELS = {
     "opencode": {"zh": "OpenCode", "en": "OpenCode"},
     "local-config": {"zh": "本机配置", "en": "Local config"},
     "project": {"zh": "当前项目", "en": "Current project"},
+    "local-cli": {"zh": "本地命令", "en": "Local CLI"},
+    "template-library": {"zh": "模板库", "en": "Template Library"},
 }
 
 
@@ -85,6 +87,8 @@ def infer_env(host: str, source_type: str) -> list[str]:
     remote_hosts = {"plugin", "mcp", "extension"}
     if source_type in remote_hosts:
         return ["remote"]
+    if source_type in {"cli", "template-library"}:
+        return ["local"]
     if host in {"cursor", "claude-code", "github-copilot", "qoder", "trae"}:
         return ["shared"]
     return ["local"]
@@ -98,6 +102,8 @@ def score_for(source_type: str) -> str:
         "mcp": "8.4",
         "rule": "8.1",
         "extension": "8.0",
+        "cli": "8.8",
+        "template-library": "8.7",
     }.get(source_type, "8.0")
 
 
@@ -175,6 +181,16 @@ def default_description(host: str, source_type: str, raw_name: str) -> tuple[str
             f"从本机配置中发现的 MCP 服务 `{raw_name}`，通常需要通过支持 MCP 的执行器接入。",
             f"Discovered MCP service '{raw_name}' from local config. Usually used through an MCP-capable runtime.",
         )
+    if source_type == "cli":
+        return (
+            f"从本地命令中发现的能力 `{raw_name}`，通常需要在终端里直接使用。",
+            f"Discovered local CLI capability '{raw_name}'. Usually used directly from the terminal.",
+        )
+    if source_type == "template-library":
+        return (
+            f"从本地模板库发现的能力 `{raw_name}`，适合在 UI/设计任务里作为风格或结构参考。",
+            f"Discovered template-library capability '{raw_name}'. Best used as a UI or design reference.",
+        )
     return (
         f"从 {host_zh} 发现的能力项。",
         f"Discovered capability from {host_en}.",
@@ -183,7 +199,7 @@ def default_description(host: str, source_type: str, raw_name: str) -> tuple[str
 
 def infer_requires_subskills(raw_name: str, description: str) -> bool:
     value = " ".join([raw_name, description]).lower()
-    markers = ("suite", "toolkit", "collection", "workflow", "orchestrator", "framework", "stack", "multi-agent", "agency", "platform")
+    markers = ("suite", "toolkit", "collection", "workflow", "orchestrator", "framework", "stack", "multi-agent", "agency", "platform", "templates", "library")
     return any(marker in value for marker in markers)
 
 
@@ -327,6 +343,58 @@ def scan_plugin_roots(path: Path) -> Iterable[dict[str, object]]:
                 source_path=candidate,
                 raw_name=name,
                 raw_description=f"Discovered plugin directory in {candidate.parent.name}.",
+            )
+        )
+    return results
+
+
+def scan_cli_tools(home: Path) -> Iterable[dict[str, object]]:
+    cli_dir = home / ".local" / "bin"
+    candidates = ["design-md"]
+    results = []
+    if not cli_dir.exists():
+        return results
+    for name in candidates:
+        path = cli_dir / name
+        if not path.exists():
+            continue
+        results.append(
+            build_capability(
+                host="local-cli",
+                source_type="cli",
+                source_path=path,
+                raw_name=name,
+                raw_description=f"本地命令 `{name}`，适合列出、定位或安装 UI 模板与设计规范。",
+            )
+        )
+    return results
+
+
+def scan_template_library(home: Path) -> Iterable[dict[str, object]]:
+    library_root = home / ".local" / "share" / "awesome-design-md" / "design-md"
+    if not library_root.exists():
+        return []
+    templates = [candidate for candidate in sorted(library_root.iterdir()) if candidate.is_dir() and not candidate.name.startswith(".")]
+    results = [
+        build_capability(
+            host="template-library",
+            source_type="template-library",
+            source_path=library_root,
+            raw_name="design-md templates",
+            raw_description=f"本地 design-md 模板库，共 {len(templates)} 套模板。可用 `design-md list`、`design-md path <name>` 和 `design-md install <name> <project>` 查看或安装模板。",
+        )
+    ]
+    top_templates = templates[:12]
+    for candidate in top_templates:
+        readme = safe_read(candidate / "README.md", 2000)
+        description = readme.splitlines()[0].strip() if readme else f"Local design template '{candidate.name}'."
+        results.append(
+            build_capability(
+                host="template-library",
+                source_type="template-library",
+                source_path=candidate / "DESIGN.md",
+                raw_name=f"design-md/{candidate.name}",
+                raw_description=description,
             )
         )
     return results
@@ -487,6 +555,8 @@ def main() -> int:
         capabilities.extend(scan_plugin_roots(root))
     capabilities.extend(scan_mcp_configs([home / ".codex", project_root]))
     capabilities.extend(scan_single_files(project_root))
+    capabilities.extend(scan_cli_tools(home))
+    capabilities.extend(scan_template_library(home))
 
     deduped = unique_capabilities(capabilities)
     summary = Counter(item["sourceType"] for item in deduped)

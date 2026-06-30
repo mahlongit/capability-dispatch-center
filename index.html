@@ -282,12 +282,15 @@
 
     .storage-box strong {
       display: block;
-      font: 600 16px/1.15 var(--font-display);
+      font: 600 15px/1.1 var(--font-display);
+      overflow-wrap: anywhere;
     }
 
     .storage-box span {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
     }
 
     .search-row {
@@ -565,14 +568,15 @@
     .meta-item strong {
       display: block;
       color: var(--ink);
-      font-size: 13px;
+      font-size: 12px;
       margin-bottom: 2px;
     }
 
     .meta-item span {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       word-break: break-word;
+      line-height: 1.45;
     }
 
     .source-list {
@@ -634,6 +638,10 @@
         grid-template-columns: 1fr;
       }
 
+      .toolbar {
+        flex-wrap: wrap;
+      }
+
       .seg {
         grid-template-columns: 1fr 1fr 1fr;
       }
@@ -644,6 +652,67 @@
 
       .score {
         grid-column: 2;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .sidebar,
+      .main,
+      .detail {
+        padding-top: 14px;
+        padding-bottom: 14px;
+      }
+
+      .storage-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .storage-box {
+        min-height: 88px;
+      }
+
+      .scene-btn {
+        padding: 10px 12px;
+      }
+
+      .sort-panel {
+        min-height: auto;
+        align-items: flex-start;
+        padding: 12px;
+        flex-direction: column;
+      }
+
+      .sort-buttons {
+        width: 100%;
+      }
+
+      .sort-buttons button,
+      .sort-direction {
+        min-height: 32px;
+        font-size: 12px;
+      }
+
+      .card {
+        padding: 14px;
+      }
+
+      .card h3 {
+        font-size: 17px;
+        line-height: 1.15;
+      }
+
+      .card p {
+        font-size: 13px;
+      }
+
+      .detail-panel h2 {
+        font-size: 20px;
+      }
+
+      .detail-panel p,
+      .style-note,
+      .prompt {
+        font-size: 12px;
       }
     }
   </style>
@@ -1019,11 +1088,23 @@
       renderAll();
     }
 
+    function normalizeSceneLabel(item) {
+      const category = item.cat || "";
+      if (category === "UI / Frontend") return "UI / 前端";
+      if (category === "Code / Backend") return "代码 / 后端";
+      if (category === "Web / Automation") return "网页 / 自动化";
+      if (category === "Video / Content") return "视频 / 内容";
+      if (category === "Knowledge / Memory") return "知识 / 记忆";
+      if (category === "Deployment") return "部署";
+      return category;
+    }
+
     function filtered() {
       const q = search.value.trim().toLowerCase();
       const list = capabilities.filter(item => {
+        const normalizedCategory = normalizeSceneLabel(item);
 	        const envOk = activeEnv === "all" || item.env.includes(activeEnv) || item.env.includes("shared");
-        const sceneOk = activeScene === "全部" || item.cat === activeScene;
+        const sceneOk = activeScene === "全部" || normalizedCategory === activeScene;
         const qOk = !q || [item.name, item.displayName, item.displayNameEn || "", item.desc || "", item.descEn || "", item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", ...(item.availableIn || []), ...item.tags].join(" ").toLowerCase().includes(q);
         return envOk && sceneOk && qOk;
       });
@@ -1050,7 +1131,7 @@
 
     function renderScenes() {
       sceneList.innerHTML = sceneKeys.map((label) => {
-        const test = label === "全部" ? (() => true) : ((item) => item.cat === label);
+        const test = label === "全部" ? (() => true) : ((item) => normalizeSceneLabel(item) === label);
         const count = capabilities.filter(item => {
           const envOk = activeEnv === "all" || item.env.includes(activeEnv) || item.env.includes("shared");
           return envOk && test(item);
