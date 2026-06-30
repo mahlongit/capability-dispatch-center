@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 
 HOST_LABELS = {
     "codex": {"zh": "Codex / CDX", "en": "Codex / CDX"},
@@ -68,12 +68,35 @@ def slug_to_title(value: str) -> str:
     return " ".join(token.capitalize() for token in cleaned.split())
 
 
-def infer_category(text: str) -> str:
+def infer_category(text: str, *, raw_name: str = "", source_type: str = "") -> str:
     value = text.lower()
-    if any(token in value for token in ("ui", "ux", "frontend", "front end", "design", "cursor", "component", "visual", "css", "accessibility", "brand")):
-        return "UI / 前端"
-    if any(token in value for token in ("deploy", "release", "vercel", "netlify", "render", "wrangler", "ops", "devops", "sre", "platform", "infrastructure")):
+    name = raw_name.lower()
+    ui_terms = (
+        "ui", "ux", "frontend", "front-end", "front end", "interface", "component",
+        "visual", "css", "accessibility", "brand", "figma", "design-system",
+        "wireframe", "layout", "motion", "typography",
+    )
+    ui_name_terms = (
+        "ui", "ux", "frontend", "front-end", "interface", "visual", "design",
+        "figma", "wireframe", "layout", "component", "motion", "brand",
+    )
+    deploy_terms = (
+        "cloudflare", "deploy", "deployment", "release", "vercel", "netlify",
+        "render", "wrangler", "ops", "devops", "sre", "platform", "infrastructure",
+        "gateway", "zero trust", "network", "tunnel", "pages",
+    )
+    if any(token in value for token in deploy_terms):
         return "部署"
+    if source_type == "template-library":
+        return "UI / 前端"
+    if source_type == "cli" and "design-md" in name:
+        return "UI / 前端"
+    if "design" in name:
+        return "UI / 前端"
+    if any(re.search(rf"(^|[-_\s/]){re.escape(token)}($|[-_\s/])", name) for token in ui_name_terms):
+        return "UI / 前端"
+    if any(token in value for token in ui_terms):
+        return "UI / 前端"
     if any(token in value for token in ("web", "browser", "search", "scrape", "http", "automation", "mcp", "crawler", "api", "integration")):
         return "网页 / 自动化"
     if any(token in value for token in ("video", "audio", "media", "caption", "podcast", "editing", "voice", "animation", "storyboard")):
@@ -253,7 +276,11 @@ def build_capability(
     description = raw_description or default_en
     description_zh = raw_description if raw_description and re.search(r"[\u4e00-\u9fff]", raw_description) else default_zh
     description_en = raw_description if raw_description and not re.search(r"[\u4e00-\u9fff]", raw_description) else default_en
-    category = infer_category(" ".join([raw_name, display_name, description, host, source_type]))
+    category = infer_category(
+        " ".join([raw_name, display_name, description, source_type]),
+        raw_name=raw_name,
+        source_type=source_type,
+    )
     env = infer_env(host, source_type)
     tags = [host, source_type, source_path.parent.name or source_path.name]
     source_path_str = str(source_path)
@@ -288,7 +315,22 @@ def scan_skill_root(root: ScanRoot) -> Iterable[dict[str, object]]:
     if not root.path.exists():
         return []
     results = []
-    for marker in root.path.rglob(root.pattern or "SKILL.md"):
+    markers = list(root.path.rglob(root.pattern or "SKILL.md"))
+    for marker in markers:
+        relative_parts = marker.relative_to(root.path).parts
+        if len(relative_parts) > 4:
+            continue
+        parent_has_skill = False
+        ancestor = marker.parent.parent
+        while root.path in (ancestor, *ancestor.parents):
+            if ancestor == root.path:
+                break
+            if (ancestor / "SKILL.md").exists():
+                parent_has_skill = True
+                break
+            ancestor = ancestor.parent
+        if parent_has_skill:
+            continue
         text = safe_read(marker)
         raw_name, raw_description = summarize_text(text)
         name = raw_name or marker.parent.name
@@ -384,19 +426,6 @@ def scan_template_library(home: Path) -> Iterable[dict[str, object]]:
             raw_description=f"本地 design-md 模板库，共 {len(templates)} 套模板。可用 `design-md list`、`design-md path <name>` 和 `design-md install <name> <project>` 查看或安装模板。",
         )
     ]
-    top_templates = templates[:12]
-    for candidate in top_templates:
-        readme = safe_read(candidate / "README.md", 2000)
-        description = readme.splitlines()[0].strip() if readme else f"Local design template '{candidate.name}'."
-        results.append(
-            build_capability(
-                host="template-library",
-                source_type="template-library",
-                source_path=candidate / "DESIGN.md",
-                raw_name=f"design-md/{candidate.name}",
-                raw_description=description,
-            )
-        )
     return results
 
 
@@ -475,11 +504,9 @@ def scan_single_files(project_root: Path) -> Iterable[dict[str, object]]:
 def unique_capabilities(items: Iterable[dict[str, object]]) -> list[dict[str, object]]:
     grouped: dict[str, dict[str, object]] = {}
     for item in items:
-        desc_basis = str(item.get("descEn") or item.get("desc") or "")[:160].lower()
         key = "::".join([
             str(item["sourceType"]),
             re.sub(r"[^a-z0-9]+", "-", str(item["name"]).lower()).strip("-"),
-            desc_basis,
         ])
         if key not in grouped:
             grouped[key] = item

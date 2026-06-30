@@ -80,7 +80,7 @@
     .app {
       display: grid;
       grid-template-columns: 264px minmax(0, 1fr) 360px;
-      grid-template-rows: 72px minmax(0, 1fr);
+      grid-template-rows: 68px minmax(0, 1fr);
       height: 100vh;
       overflow: hidden;
     }
@@ -200,15 +200,15 @@
     .detail {
       min-width: 0;
       min-height: 0;
-      padding: 18px;
+      padding: 14px;
     }
 
     .sidebar {
       padding-left: 24px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      overflow: hidden;
+      gap: 10px;
+      overflow: auto;
     }
 
     .main {
@@ -225,14 +225,14 @@
 
     .panel {
       border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-md);
       background: var(--panel);
       box-shadow: var(--shadow);
       min-height: 0;
     }
 
     .panel-title {
-      padding: 16px 16px 0;
+      padding: 12px 14px 0;
       color: var(--muted);
       font: 600 12px/1.2 var(--font-display);
       letter-spacing: .05em;
@@ -240,11 +240,12 @@
     }
 
     .scene-list {
-      padding: 12px;
+      padding: 8px;
       display: grid;
-      gap: 8px;
+      gap: 4px;
       overflow: auto;
       min-height: 0;
+      max-height: 300px;
     }
 
     .scene-btn {
@@ -253,9 +254,10 @@
       justify-content: space-between;
       gap: 10px;
       width: 100%;
-      padding: 12px 14px;
+      min-height: 30px;
+      padding: 6px 10px;
       border: 0;
-      border-radius: 12px;
+      border-radius: 8px;
       background: transparent;
       color: var(--muted);
       text-align: left;
@@ -273,11 +275,11 @@
     }
 
     .storage {
-      padding: 14px;
+      padding: 10px;
     }
 
     .storage p {
-      margin: 0 0 12px;
+      margin: 0 0 10px;
       color: var(--muted);
       font-size: 13px;
     }
@@ -285,26 +287,26 @@
     .storage-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      gap: 6px;
     }
 
     .storage-box {
-      padding: 12px;
-      border-radius: 12px;
+      padding: 7px 8px;
+      border-radius: 8px;
       background: var(--panel-2);
       border: 1px solid var(--line);
     }
 
     .storage-box strong {
       display: block;
-      font: 600 15px/1.1 var(--font-display);
+      font: 600 12px/1.1 var(--font-display);
       overflow-wrap: anywhere;
     }
 
     .storage-box span {
       color: var(--muted);
-      font-size: 11px;
-      line-height: 1.45;
+      font-size: 10px;
+      line-height: 1.25;
       overflow-wrap: anywhere;
     }
 
@@ -521,7 +523,7 @@
     }
 
     .prompt {
-      padding: 14px;
+      padding: 10px;
       border-radius: 10px;
       border: 1px solid rgba(27,25,56,.12);
       background: linear-gradient(180deg, #161733, #0e3030);
@@ -563,19 +565,19 @@
     }
 
     .source-meta p {
-      margin: 0 0 10px;
+      margin: 0 0 8px;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .meta-list {
       display: grid;
-      gap: 8px;
+      gap: 6px;
     }
 
     .meta-item {
-      padding: 10px 12px;
-      border-radius: 12px;
+      padding: 8px 10px;
+      border-radius: 8px;
       border: 1px solid var(--line);
       background: var(--panel-2);
     }
@@ -745,8 +747,8 @@
       <div class="toolbar">
         <div class="seg" aria-label="运行环境切换">
           <button class="active" data-env="all" id="envAll">全部能力</button>
-          <button data-env="local" id="envLocal">本地</button>
-          <button data-env="remote" id="envRemote">远程</button>
+          <button data-env="codex" id="envLocal">CDX</button>
+          <button data-env="hermes" id="envRemote">HMS</button>
         </div>
         <div class="lang-toggle" aria-label="语言切换">
           <button class="active" data-lang="zh">中</button>
@@ -845,19 +847,19 @@
       zh: {
         brandSubtitle: "通用能力调度台。左边按场景筛选，中间选择能力，右边复制调用提示。",
         envAll: "全部能力",
-        envLocal: "本地",
-        envRemote: "远程",
+        envLocal: "CDX",
+        envRemote: "HMS",
         themeDark: "黑",
         themeLight: "白",
         sceneTitle: "场景",
         scopeTitle: "范围说明",
-        scopeText: "`全部能力` 会展示本地、远程和共享能力。筛选只改变视图，不会触发任何执行。",
-        boxLocalTitle: "本地",
-        boxLocalText: "本机脚本或工具",
-        boxRemoteTitle: "远程",
-        boxRemoteText: "API 或托管服务",
-        boxSharedTitle: "共享",
-        boxSharedText: "两类环境均可用",
+        scopeText: "`全部能力` 显示所有发现项；CDX / HMS 只按真实宿主过滤，不会触发任何执行。",
+        boxLocalTitle: "CDX",
+        boxLocalText: "Codex / CDX 侧",
+        boxRemoteTitle: "HMS",
+        boxRemoteText: "Hermes 侧",
+        boxSharedTitle: "其他",
+        boxSharedText: "CLI / MCP / 插件",
         boxReadonlyTitle: "只读",
         boxReadonlyText: "选择能力不执行",
         sourceTitle: "当前数据源",
@@ -902,19 +904,19 @@
       en: {
         brandSubtitle: "Capability router. Filter on the left, inspect in the middle, copy the routing prompt on the right.",
         envAll: "All",
-        envLocal: "Local",
-        envRemote: "Remote",
+        envLocal: "CDX",
+        envRemote: "HMS",
         themeDark: "Dark",
         themeLight: "Light",
         sceneTitle: "Scenes",
         scopeTitle: "Scope",
-        scopeText: "`All` shows local, remote, and shared capabilities. Filters only change the view and never execute anything.",
-        boxLocalTitle: "Local",
-        boxLocalText: "Local scripts or tools",
-        boxRemoteTitle: "Remote",
-        boxRemoteText: "APIs or hosted services",
-        boxSharedTitle: "Shared",
-        boxSharedText: "Works in both contexts",
+        scopeText: "`All` shows every discovered item. CDX / HMS filter by real host availability and never execute anything.",
+        boxLocalTitle: "CDX",
+        boxLocalText: "Codex / CDX side",
+        boxRemoteTitle: "HMS",
+        boxRemoteText: "Hermes side",
+        boxSharedTitle: "Other",
+        boxSharedText: "CLI / MCP / plugins",
         boxReadonlyTitle: "Read-only",
         boxReadonlyText: "Selection does not execute",
         sourceTitle: "Data Source",
@@ -1114,11 +1116,21 @@
       return category;
     }
 
+    function availableHosts(item) {
+      const hosts = Array.isArray(item.availableIn) && item.availableIn.length ? item.availableIn : [item.host || ""];
+      return hosts.flatMap(host => String(host).split("/")).map(host => host.trim()).filter(Boolean);
+    }
+
+    function hostOk(item) {
+      if (activeEnv === "all") return true;
+      return availableHosts(item).includes(activeEnv);
+    }
+
     function filtered() {
       const q = search.value.trim().toLowerCase();
       const list = capabilities.filter(item => {
         const normalizedCategory = normalizeSceneLabel(item);
-	        const envOk = activeEnv === "all" || item.env.includes(activeEnv) || item.env.includes("shared");
+        const envOk = hostOk(item);
         const sceneOk = activeScene === "全部" || normalizedCategory === activeScene;
         const qOk = !q || [item.name, item.displayName, item.displayNameEn || "", item.desc || "", item.descEn || "", item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", ...(item.availableIn || []), ...item.tags].join(" ").toLowerCase().includes(q);
         return envOk && sceneOk && qOk;
@@ -1148,7 +1160,7 @@
       sceneList.innerHTML = sceneKeys.map((label) => {
         const test = label === "全部" ? (() => true) : ((item) => normalizeSceneLabel(item) === label);
         const count = capabilities.filter(item => {
-          const envOk = activeEnv === "all" || item.env.includes(activeEnv) || item.env.includes("shared");
+          const envOk = hostOk(item);
           return envOk && test(item);
         }).length;
         return `<button class="scene-btn ${label === activeScene ? "active" : ""}" data-scene="${label}"><span>${translations[activeLang].sceneLabels[label] || label}</span><span class="scene-count">${count}</span></button>`;

@@ -8,3 +8,4 @@ dist/
 .codebase-memory/
 capability-registry.local.json
 scan-report.json
+.backup/
