@@ -2,7 +2,7 @@
 
 > A clean capability dispatch center for AI-assisted workflows.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Proprietary](https://img.shields.io/badge/license-proprietary-red.svg)](#license)
 [![Static App](https://img.shields.io/badge/static-html%20%2B%20json-blue.svg)](#local-use)
 [![Privacy First](https://img.shields.io/badge/privacy-clean%20template-green.svg)](#boundary)
 
@@ -15,6 +15,10 @@ This repository is intentionally generic. It does not include private machine pa
 | Capability Examples | Categories | Execution Scopes | Runtime |
 |:---:|:---:|:---:|:---:|
 | **10** | **6** | **3** | **Static HTML + JSON** |
+
+## Product Preview
+
+![CD-Center product page](assets/product-page.png)
 
 ## What It Does
 
@@ -41,10 +45,12 @@ The default interface is a three-column workbench:
 ├── index.html
 ├── capability-registry.public.json
 ├── .gitignore
+├── assets
+│   └── product-page.png
 ├── CATALOG.md
-├── LICENSE
 ├── README.md
 └── docs
+    ├── USAGE.md
     └── MAINTENANCE_WORKFLOW.md
 ```
 
@@ -101,6 +107,10 @@ http://localhost:8080
 
 Opening `index.html` directly may fail in some browsers because the page fetches `./capability-registry.public.json`.
 
+## Usage Guide
+
+See [docs/USAGE.md](docs/USAGE.md) for the operator workflow, registry editing rules, validation commands, and release checklist.
+
 ## Validation
 
 Run:
@@ -118,7 +128,7 @@ Also check that the repository does not contain private paths, credentials, acco
 - Modify capability data in `capability-registry.public.json`.
 - Modify project guidance in `README.md` or `docs/`.
 - Validate locally before committing.
-- Keep the repository private unless you have reviewed the registry and documentation for public release.
+- Keep the repository private unless a separate public-release review has been completed.
 
 ## Suggested Repository Topics
 
@@ -130,4 +140,4 @@ CD-Center is a generic capability router template. It is not a deployment system
 
 ## License
 
-MIT License.
+This repository is private and proprietary. No open-source license is granted.
