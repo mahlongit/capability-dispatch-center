@@ -1,20 +1,14 @@
 # CD-Center
 
-> A clean capability dispatch center for AI-assisted workflows.
+> A local capability discovery and dispatch skill for AI-assisted workflows.
 
 [![License: Proprietary](https://img.shields.io/badge/license-proprietary-red.svg)](#license)
-[![Static App](https://img.shields.io/badge/static-html%20%2B%20json-blue.svg)](#local-use)
-[![Privacy First](https://img.shields.io/badge/privacy-clean%20template-green.svg)](#boundary)
+[![Local Scan](https://img.shields.io/badge/local-skill%20discovery-blue.svg)](#what-it-does)
+[![Prompt + CLI + UI](https://img.shields.io/badge/usage-prompt%20cli%20ui-green.svg)](#quick-start)
 
-CD-Center is a clean, standalone capability dispatch interface for AI-assisted work. It helps a person or an AI operator choose the right capability before executing a task.
+CD-Center is a complete local skill project, not just a static page. Its job is to scan a user's machine for installed skills, plugins, MCP servers, and agents, generate a local capability registry, and open a dispatch page before execution starts.
 
-This repository is intentionally generic. It does not include private machine paths, private tool inventories, account data, tokens, cookies, internal deployment details, or any user-specific capability list.
-
-## Project Scale
-
-| Capability Examples | Categories | Execution Scopes | Runtime |
-|:---:|:---:|:---:|:---:|
-| **10** | **6** | **3** | **Static HTML + JSON** |
+It is private and proprietary. It is intended to help operators and AI tools route work using the capabilities already present on the user's machine.
 
 ## Product Preview
 
@@ -22,121 +16,135 @@ This repository is intentionally generic. It does not include private machine pa
 
 ## What It Does
 
-- Shows capabilities from a JSON registry.
-- Filters by scenario and execution scope.
-- Searches by task, capability name, description, or tag.
-- Displays a recommended prompt for the selected capability.
-- Copies the prompt for use in another AI or automation environment.
+- Scans common local capability roots such as `.codex`, `.agents`, `.claude`, `.cursor`, `.hermes`, and project-local agent directories.
+- Detects skills, plugins, MCP configurations, rules, and agent files.
+- Generates `capability-registry.local.json`.
+- Opens a local dispatch page that prefers the scanned local registry over the example registry.
+- Gives the user three entry modes: prompt, terminal launcher, and local page.
 
-CD-Center does not execute tools directly. It is a planning and routing layer.
+## Quick Start
 
-## Screenshot-Free Preview
+### 1. Prompt Mode
 
-The default interface is a three-column workbench:
+Use the prompt in [docs/PROMPTS.md](docs/PROMPTS.md) with your AI tool.
 
-- Left: scenario filters.
-- Center: searchable capability cards.
-- Right: detail panel with a copyable prompt.
+### 2. Terminal Install
 
-## Files
+```bash
+git clone https://github.com/mahlongit/capability-dispatch-center
+cd capability-dispatch-center
+bash scripts/install.sh
+cd-center doctor
+cd-center open
+```
+
+### 3. Manual Local Scan + Page
+
+```bash
+python3 scripts/scan_capabilities.py
+python3 scripts/serve.py --open
+```
+
+## User Workflows
+
+### Prompt Workflow
+
+The user gives CD-Center's routing prompt to an AI tool. The AI scans first, routes second, executes third.
+
+### Terminal Workflow
+
+The user installs the launcher and runs:
+
+```bash
+cd-center scan
+cd-center open
+```
+
+### Local Page Workflow
+
+The user opens the local page after a scan and:
+
+1. Filters by category or execution scope.
+2. Searches the discovered inventory.
+3. Picks a capability.
+4. Copies the recommended routing prompt into the target AI tool.
+
+## Supported Tool Styles
+
+| Tool | Support | Notes |
+|---|---|---|
+| Codex / CDX | direct | Prompt, scan, local page |
+| Claude Code | direct | Prompt, scan, local page |
+| Cursor | direct | Prompt, scan, local page |
+| GitHub Copilot | direct | Prompt, scan, local page |
+| OpenClaw | direct | Prompt, scan, local page |
+| Hermes Agent | direct | Prompt, scan, local page |
+| Trae | direct | Prompt, scan, local page |
+| Qoder | direct | Prompt, scan, local page |
+
+See [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) and [integrations/](integrations/README.md).
+
+## Commands
+
+```bash
+python3 scripts/scan_capabilities.py
+python3 scripts/serve.py --open
+bash scripts/doctor.sh
+bash scripts/install.sh
+```
+
+After installation:
+
+```bash
+cd-center scan
+cd-center open
+cd-center doctor
+cd-center prompt
+```
+
+## Project Structure
 
 ```text
 .
-├── index.html
-├── capability-registry.public.json
-├── .gitignore
-├── assets
-│   └── product-page.png
-├── CATALOG.md
+├── SKILL.md
 ├── README.md
-└── docs
-    ├── USAGE.md
-    └── MAINTENANCE_WORKFLOW.md
+├── CATALOG.md
+├── package.json
+├── capability-registry.public.json
+├── templates/
+├── scripts/
+├── docs/
+├── integrations/
+├── assets/
+└── index.html
 ```
 
-## Registry Format
+## Data Sources
 
-Each capability is stored as one JSON object:
+- `capability-registry.local.json`
+  Generated by the scanner on the user's machine. This is the primary runtime source.
 
-```json
-{
-  "name": "web-research",
-  "displayName": "网页调研",
-  "cat": "网页 / 自动化",
-  "env": ["remote"],
-  "icon": "WEB",
-  "score": "8.7",
-  "desc": "用于读取公开网页、文档、社区资料或产品页面，并整理可信证据。",
-  "tags": ["网页", "调研", "证据"],
-  "prompt": "请先读取公开资料并给出来源，再总结结论、证据和不确定项。"
-}
-```
+- `capability-registry.public.json`
+  Clean example data shipped with the repository. Used as a fallback when no local scan result exists.
 
-Supported categories in the default UI:
+## Security Model
 
-- `UI / 前端`
-- `代码 / 后端`
-- `网页 / 自动化`
-- `视频 / 内容`
-- `知识 / 记忆`
-- `部署`
+- The repository ships only generic example data.
+- The scanner writes the local inventory to `capability-registry.local.json`, which is gitignored.
+- The local inventory may include machine-specific paths on the user's machine, but those must not be committed.
+- The page is local-first. It does not silently publish the local inventory anywhere.
 
-Supported execution scopes:
+## Documentation
 
-- `local`
-- `remote`
-- `shared`
-
-## Capability Catalog
-
-See [CATALOG.md](CATALOG.md) for the default clean example catalog. Replace the examples with your own sanitized registry when adapting CD-Center for a team.
-
-## Local Use
-
-Use any static file server from the project root:
-
-```bash
-python3 -m http.server 8080
-```
-
-Then open:
-
-```text
-http://localhost:8080
-```
-
-Opening `index.html` directly may fail in some browsers because the page fetches `./capability-registry.public.json`.
-
-## Usage Guide
-
-See [docs/USAGE.md](docs/USAGE.md) for the operator workflow, registry editing rules, validation commands, and release checklist.
-
-## Validation
-
-Run:
-
-```bash
-python3 -m json.tool capability-registry.public.json >/dev/null
-grep -n "capability-registry.public.json" index.html
-```
-
-Also check that the repository does not contain private paths, credentials, account identifiers, or private capability inventories.
-
-## Maintenance
-
-- Modify UI in `index.html`.
-- Modify capability data in `capability-registry.public.json`.
-- Modify project guidance in `README.md` or `docs/`.
-- Validate locally before committing.
-- Keep the repository private unless a separate public-release review has been completed.
-
-## Suggested Repository Topics
-
-`ai-tools`, `agent-workflow`, `capability-routing`, `static-site`, `prompt-engineering`, `ai-operations`, `workflow-tools`
+- [docs/INSTALL.md](docs/INSTALL.md)
+- [docs/USAGE.md](docs/USAGE.md)
+- [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)
+- [docs/PROMPTS.md](docs/PROMPTS.md)
+- [docs/MAINTENANCE_WORKFLOW.md](docs/MAINTENANCE_WORKFLOW.md)
 
 ## Boundary
 
-CD-Center is a generic capability router template. It is not a deployment system, credential store, agent runtime, browser controller, or secret manager.
+CD-Center is a discovery and routing layer. It does not replace the execution tool, auto-install third-party packages without operator action, or expose private inventory by default.
 
 ## License
 

@@ -1,0 +1,11 @@
+{
+  "name": "cd-center",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Local capability discovery and dispatch center for AI-assisted workflows",
+  "scripts": {
+    "scan": "python3 scripts/scan_capabilities.py",
+    "serve": "python3 scripts/serve.py",
+    "doctor": "bash scripts/doctor.sh"
+  }
+}

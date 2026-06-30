@@ -1,12 +1,14 @@
 # Maintenance Workflow
 
-This document defines how to maintain CD-Center without leaking private operational context.
+This document defines how to maintain CD-Center as a reusable local capability discovery skill without leaking private operational context.
 
 ## Principles
 
-- Keep the registry generic unless the repository is intentionally private for a specific team.
+- Keep the example registry generic unless the repository is intentionally private for a specific team.
 - Do not commit credentials, account names, cookies, tokens, private machine paths, internal logs, or private capability inventories.
-- Treat `capability-registry.public.json` as data and `index.html` as the static UI.
+- Treat `capability-registry.public.json` as shipped example data.
+- Treat `capability-registry.local.json` as generated local runtime data and do not commit it.
+- Treat `index.html` as the local dispatch UI.
 - Validate before every commit.
 - Do not enable public hosting until the registry and documentation have been reviewed for disclosure risk.
 
@@ -45,6 +47,8 @@ From the project root:
 ```bash
 python3 -m json.tool capability-registry.public.json >/dev/null
 grep -n "capability-registry.public.json" index.html
+python3 scripts/scan_capabilities.py --output /tmp/cd-center-scan.json
+python3 scripts/serve.py --no-scan
 python3 - <<'PY'
 import json
 from collections import Counter
@@ -62,6 +66,12 @@ print("tags_arrays_ok:", all(isinstance(item.get("tags"), list) for item in data
 PY
 ```
 
+## Runtime Files
+
+- `capability-registry.public.json`: committed example data
+- `capability-registry.local.json`: generated local data, gitignored
+- `templates/capability-registry.example.json`: starter template
+
 ## Security Review
 
 Run a disclosure scan before every commit:
@@ -70,7 +80,7 @@ Run a disclosure scan before every commit:
 grep -RInE "(/Users/|token|cookie|secret|password|\\.env|private key|BEGIN .*KEY)" .
 ```
 
-Every match must be reviewed. Generic documentation may mention security concepts such as `token` or `cookie`, but the repository must not contain real credentials, private machine paths, account identifiers, private deployment context, or private capability inventories.
+Every match must be reviewed. Generic documentation may mention security concepts such as `token` or `cookie`, but the repository must not contain real credentials, private machine paths, account identifiers, private deployment context, or committed local capability inventories.
 
 For a team-specific fork, add your own forbidden project names, internal tool names, and deployment identifiers to the scan before release. Do not commit that private forbidden-term list to a reusable template repository unless it has also been sanitized.
 
@@ -79,8 +89,9 @@ For a team-specific fork, add your own forbidden project names, internal tool na
 Before pushing a release or handoff commit:
 
 - JSON validation passes.
-- `index.html` still loads `./capability-registry.public.json`.
-- Registry entries use generic capability examples only.
+- `index.html` can load `capability-registry.local.json` and fall back to `capability-registry.public.json`.
+- Example registry entries remain generic.
+- Local registry remains uncommitted.
 - Category counts render correctly in the UI.
 - Security review has no unresolved private-context matches.
 - Repository visibility is private unless a separate public-release review has been completed.
@@ -91,7 +102,7 @@ Before pushing a release or handoff commit:
 
 ```bash
 git status --short
-git add index.html capability-registry.public.json .gitignore README.md docs
+git add SKILL.md package.json index.html capability-registry.public.json templates scripts .gitignore README.md docs integrations assets CATALOG.md
 git commit -m "Update CD-Center"
 git push
 ```
@@ -105,7 +116,7 @@ If `git push` fails, record the exact error and determine whether the cause is a
 Before pushing, search for private context:
 
 ```bash
-grep -RInE "(/Users/|token|cookie|secret|password|\\.env|private key|BEGIN .*KEY)" .
+grep -RInE "(/Users/|token|cookie|secret|password|\\.env|private key|BEGIN .*KEY)" --exclude-dir=.git .
 ```
 
 Review any match before committing.

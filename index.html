@@ -478,6 +478,41 @@
       color: var(--ink);
     }
 
+    .source-meta {
+      padding: 14px;
+    }
+
+    .source-meta p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .meta-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .meta-item {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .meta-item strong {
+      display: block;
+      color: var(--ink);
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .meta-item span {
+      color: var(--muted);
+      font-size: 12px;
+      word-break: break-word;
+    }
+
     @media (max-width: 1180px) {
       body {
         height: auto;
@@ -573,6 +608,15 @@
           <div class="storage-box"><strong>只读</strong><span>选择能力不执行</span></div>
         </div>
       </div>
+      <div class="panel source-meta">
+        <div class="panel-title" style="padding:0 0 12px">当前数据源</div>
+        <p id="registryStatus">启动中，正在检查本机扫描结果。</p>
+        <div class="meta-list">
+          <div class="meta-item"><strong>数据模式</strong><span id="registryMode">自动检测</span></div>
+          <div class="meta-item"><strong>能力数量</strong><span id="registryCount">-</span></div>
+          <div class="meta-item"><strong>扫描时间</strong><span id="registryTime">-</span></div>
+        </div>
+      </div>
     </aside>
 
     <main class="main">
@@ -581,7 +625,7 @@
           <span>⌕</span>
           <input id="search" autocomplete="off" placeholder="搜索任务、能力或标识，例如：改 UI、网页调研、视频生成、代码审查" />
         </label>
-        <div class="hint">这是调度视图，不保存密钥，也不直接调用外部工具。</div>
+        <div class="hint" id="hintText">默认优先加载 `capability-registry.local.json`，找不到时再回退到示例库。</div>
       </div>
       <div class="cards" id="cards"></div>
     </main>
@@ -608,6 +652,8 @@
     };
 
     let capabilities = [];
+    let registryMeta = null;
+    let registrySource = "auto";
     let activeEnv = "all";
     let activeScene = "全部";
     let activeTheme = "light";
@@ -627,6 +673,11 @@
     const cards = document.getElementById("cards");
     const detail = document.getElementById("detail");
     const search = document.getElementById("search");
+    const registryStatus = document.getElementById("registryStatus");
+    const registryMode = document.getElementById("registryMode");
+    const registryCount = document.getElementById("registryCount");
+    const registryTime = document.getElementById("registryTime");
+    const hintText = document.getElementById("hintText");
 
     function applyTheme(themeName) {
       activeTheme = themeName;
@@ -635,10 +686,72 @@
       document.querySelectorAll(".theme-toggle button").forEach(btn => btn.classList.toggle("active", btn.dataset.theme === themeName));
     }
 
+    function normalizeRegistry(payload, sourceLabel) {
+      if (Array.isArray(payload)) {
+        return {
+          capabilities: payload,
+          meta: {
+            label: sourceLabel,
+            mode: sourceLabel === "local" ? "本机扫描结果" : "示例库",
+            capabilityCount: payload.length
+          }
+        };
+      }
+      return {
+        capabilities: Array.isArray(payload.capabilities) ? payload.capabilities : [],
+        meta: {
+          ...payload.meta,
+          label: sourceLabel,
+          mode: sourceLabel === "local" ? "本机扫描结果" : "示例库"
+        }
+      };
+    }
+
+    function updateRegistryMeta() {
+      const count = registryMeta?.capabilityCount ?? capabilities.length;
+      registryStatus.textContent = registrySource === "local"
+        ? "已加载本机扫描结果。打开页面前应先运行扫描。"
+        : "未发现本机扫描结果，当前展示仓库自带示例库。";
+      registryMode.textContent = registryMeta?.mode || "未知";
+      registryCount.textContent = String(count);
+      registryTime.textContent = registryMeta?.generatedAt || "-";
+      hintText.textContent = registrySource === "local"
+        ? "当前页面来自本机扫描结果。重新扫描后刷新页面即可更新。"
+        : "当前页面来自示例库。运行 `python3 scripts/scan_capabilities.py` 或 `cd-center scan` 后刷新即可切到本机结果。";
+    }
+
+    async function fetchRegistry(url, sourceLabel) {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`${sourceLabel}:${response.status}`);
+      }
+      const payload = await response.json();
+      return normalizeRegistry(payload, sourceLabel);
+    }
+
     async function loadRegistry() {
-      const response = await fetch("./capability-registry.public.json", { cache: "no-store" });
-      capabilities = await response.json();
-      selected = capabilities[0];
+      const params = new URLSearchParams(window.location.search);
+      const forcedSource = params.get("source");
+      let registry;
+      if (forcedSource === "example") {
+        registry = await fetchRegistry("./capability-registry.public.json", "example");
+        registrySource = "example";
+      } else if (forcedSource === "local") {
+        registry = await fetchRegistry("./capability-registry.local.json", "local");
+        registrySource = "local";
+      } else {
+        try {
+          registry = await fetchRegistry("./capability-registry.local.json", "local");
+          registrySource = "local";
+        } catch (_error) {
+          registry = await fetchRegistry("./capability-registry.public.json", "example");
+          registrySource = "example";
+        }
+      }
+      capabilities = registry.capabilities;
+      registryMeta = registry.meta;
+      selected = capabilities[0] || null;
+      updateRegistryMeta();
       renderAll();
     }
 
@@ -647,7 +760,7 @@
       return capabilities.filter(item => {
 	        const envOk = activeEnv === "all" || item.env.includes(activeEnv) || item.env.includes("shared");
         const sceneOk = activeScene === "全部" || item.cat === activeScene;
-        const qOk = !q || [item.name, item.displayName, item.desc, item.cat, ...item.tags].join(" ").toLowerCase().includes(q);
+        const qOk = !q || [item.name, item.displayName, item.desc, item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", ...item.tags].join(" ").toLowerCase().includes(q);
         return envOk && sceneOk && qOk;
       });
     }
@@ -701,6 +814,13 @@
         <div class="detail-id">${selected.name}</div>
         <p>${selected.desc}</p>
         <div class="tags" style="margin-top:12px">${selected.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div>
+
+        ${selected.sourcePath ? `
+        <div class="block">
+          <h3>发现来源</h3>
+          <div class="style-note"><strong>${selected.host || "local"}</strong> · ${selected.sourceType || "capability"}<br>${selected.sourcePathDisplay || selected.sourcePath}</div>
+        </div>
+        ` : ""}
 
         <div class="block">
           <h3>推荐调用提示</h3>

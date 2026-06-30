@@ -6,3 +6,5 @@ dist/
 .env
 .env.*
 .codebase-memory/
+capability-registry.local.json
+scan-report.json
