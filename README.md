@@ -1,99 +1,80 @@
-# CD-Center 本地skill、插件等能力可视化调度中心
+# CD-Center 本地 skill、插件等能力可视化调度中心
 
-> A local capability discovery and dispatch skill for AI-assisted workflows.
+> 扫描本机已有能力，先路由，再执行。  
+> Scan local capabilities first, route work second, execute last.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Local Scan](https://img.shields.io/badge/local-skill%20discovery-blue.svg)](#what-it-does)
-[![Prompt + CLI + UI](https://img.shields.io/badge/usage-prompt%20cli%20ui-green.svg)](#quick-start)
+[![Local Scan](https://img.shields.io/badge/local-capability%20scan-blue.svg)](#快速开始--quick-start)
+[![Prompt + CLI + UI](https://img.shields.io/badge/usage-prompt%20cli%20ui-green.svg)](#使用方式--how-to-use)
 
-CD-Center is a complete local skill project, not just a static page. Its job is to scan a user's machine for installed skills, plugins, MCP servers, and agents, generate a local capability registry, and open a dispatch page before execution starts.
+CD-Center 是一个本地优先的能力发现与调度工具。它会扫描用户电脑上已经安装的 skill、plugin、MCP、agent 和规则文件，生成本地能力清单，再用一个本地页面把这些能力组织起来，帮助用户和 AI 工具先做能力路由，再进入执行。
 
-It is intended to help operators and AI tools route work using the capabilities already present on the user's machine.
+CD-Center is a local-first capability discovery and dispatch tool. It scans installed skills, plugins, MCP servers, agents, and rule files on a user's machine, generates a local registry, and presents that registry in a local page so users and AI tools can route work before execution.
 
-## Product Preview
+## 产品截图 · Product Preview
 
 ![CD-Center product page](assets/product-page.png)
 
-## What It Does
+## 这是什么 · What It Is
 
-- Scans common local capability roots such as `.codex`, `.agents`, `.claude`, `.cursor`, `.hermes`, and project-local agent directories.
-- Detects skills, plugins, MCP configurations, rules, and agent files.
-- Generates `capability-registry.local.json`.
-- Opens a local dispatch page that prefers the scanned local registry over the example registry.
-- Gives the user three entry modes: prompt, terminal launcher, and local page.
+- 扫描本机常见能力根目录：`.codex`、`.agents`、`.hermes`、`.claude`、`.cursor`、项目级 agent/rule 目录，以及 MCP 配置文件。
+- 生成 `capability-registry.local.json`，供本地页面优先加载。
+- 提供三种使用入口：提示词、命令行、可视化页面。
+- 对每个能力给出摘要、宿主信息、提示词和路由建议。
 
-## Quick Start
+- Scan common local capability roots such as `.codex`, `.agents`, `.hermes`, `.claude`, `.cursor`, project-local agent/rule folders, and MCP config files.
+- Generate `capability-registry.local.json` and prefer it at runtime.
+- Offer three entry points: prompts, CLI, and a local visual page.
+- Show a summary, host information, prompt, and routing guidance for each capability.
 
-### 1. Prompt Mode
+## 使用方式 · How To Use
 
-Use the prompt in [docs/PROMPTS.md](docs/PROMPTS.md) with your AI tool.
+### 1. 提示词方式 · Prompt mode
 
-### 2. Terminal Install
+看 [docs/PROMPTS.md](docs/PROMPTS.md)。  
+Use the prompt templates in [docs/PROMPTS.md](docs/PROMPTS.md).
+
+### 2. 一键安装方式 · One-command setup
 
 ```bash
 git clone https://github.com/mahlongit/capability-dispatch-center
 cd capability-dispatch-center
-bash scripts/install.sh
+bash scripts/install.sh all
 cd-center doctor
 cd-center open
 ```
 
-### 3. Manual Local Scan + Page
+### 3. 手动命令方式 · Manual CLI mode
 
 ```bash
 python3 scripts/scan_capabilities.py
 python3 scripts/serve.py --open
 ```
 
-## User Workflows
+### 4. 本地页面方式 · Local page mode
 
-### Prompt Workflow
+先扫描，再打开本地页面，在页面里筛选、搜索、排序、复制提示词。  
+Scan first, then open the local page to filter, search, sort, and copy routing prompts.
 
-The user gives CD-Center's routing prompt to an AI tool. The AI scans first, routes second, executes third.
+## 快速开始 · Quick Start
 
-### Terminal Workflow
-
-The user installs the launcher and runs:
-
-```bash
-cd-center scan
-cd-center open
-```
-
-### Local Page Workflow
-
-The user opens the local page after a scan and:
-
-1. Filters by category or execution scope.
-2. Searches the discovered inventory.
-3. Picks a capability.
-4. Copies the recommended routing prompt into the target AI tool.
-
-## Supported Tool Styles
-
-| Tool | Support | Notes |
-|---|---|---|
-| Codex / CDX | direct | Prompt, scan, local page |
-| Claude Code | direct | Prompt, scan, local page |
-| Cursor | direct | Prompt, scan, local page |
-| GitHub Copilot | direct | Prompt, scan, local page |
-| OpenClaw | direct | Prompt, scan, local page |
-| Hermes Agent | direct | Prompt, scan, local page |
-| Trae | direct | Prompt, scan, local page |
-| Qoder | direct | Prompt, scan, local page |
-
-See [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) and [integrations/](integrations/README.md).
-
-## Commands
+### 主流工具一键接入 · One-step integration stubs
 
 ```bash
-python3 scripts/scan_capabilities.py
-python3 scripts/serve.py --open
-bash scripts/doctor.sh
-bash scripts/install.sh
+bash scripts/install.sh codex
+bash scripts/install.sh claude-code
+bash scripts/install.sh copilot
+bash scripts/install.sh cursor
+bash scripts/install.sh trae
+bash scripts/install.sh qoder
+bash scripts/install.sh hermes
+bash scripts/install.sh openclaw
 ```
 
-After installation:
+`scripts/install.sh all` 会安装本地 launcher，并为主流工具写入最小接入文件。  
+`scripts/install.sh all` installs the local launcher and writes minimal integration files for common tools.
+
+### 常用命令 · Common commands
 
 ```bash
 cd-center scan
@@ -102,50 +83,81 @@ cd-center doctor
 cd-center prompt
 ```
 
-## Project Structure
+或者：
+
+```bash
+python3 scripts/scan_capabilities.py
+python3 scripts/serve.py --open
+bash scripts/doctor.sh
+```
+
+## 当前支持 · Current Coverage
+
+| Tool | Mode | Notes |
+|---|---|---|
+| Codex / CDX | stub + page | local scan, prompt routing, project agent stub |
+| Claude Code | stub + page | local scan, prompt routing, agent stub |
+| GitHub Copilot | stub + page | local scan, prompt routing, agent stub |
+| Cursor | stub + page | local scan, prompt routing, rule stub |
+| Trae | stub + page | local scan, prompt routing, rule stub |
+| Qoder | stub + page | local scan, prompt routing, agent stub |
+| Hermes | stub + page | local scan, prompt routing, skill stub |
+| OpenClaw | stub + page | local scan, prompt routing, skill stub |
+
+更详细的说明在 [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) 和 [integrations/](integrations/README.md)。  
+More detail lives in [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) and [integrations/](integrations/README.md).
+
+## 项目结构 · Project Structure
 
 ```text
 .
 ├── SKILL.md
 ├── README.md
 ├── CATALOG.md
+├── LICENSE
 ├── package.json
 ├── capability-registry.public.json
-├── templates/
 ├── scripts/
+├── templates/
 ├── docs/
 ├── integrations/
 ├── assets/
 └── index.html
 ```
 
-## Data Sources
+## 数据源 · Data Sources
 
 - `capability-registry.local.json`
-  Generated by the scanner on the user's machine. This is the primary runtime source.
+  用户本机扫描结果。运行时优先加载，不应提交到仓库。
 
 - `capability-registry.public.json`
-  Clean example data shipped with the repository. Used as a fallback when no local scan result exists.
+  仓库附带的纯净示例库。没有本机扫描结果时回退到这里。
 
-## Security Model
+- `capability-registry.local.json`
+  Local scan result. This is the preferred runtime source and should not be committed.
 
-- The repository ships only generic example data.
-- The scanner writes the local inventory to `capability-registry.local.json`, which is gitignored.
-- The local inventory may include machine-specific paths on the user's machine, but those must not be committed.
-- The page is local-first. It does not silently publish the local inventory anywhere.
-- The repository ships only clean example data and public documentation. Your own scanned inventory stays local unless you choose to share it.
+- `capability-registry.public.json`
+  Clean example registry shipped with the repository. Used as a fallback when no local scan result exists.
 
-## Documentation
+## 安全边界 · Security Boundary
+
+- 仓库只附带纯净示例库和公开文档。
+- 用户本机扫描结果默认只留在本地。
+- 页面不会自动把本机能力库上传出去。
+- 这个项目是“发现与路由层”，不是自动执行器、密钥库或云端控制台。
+
+- The repository ships only clean example data and public-safe docs.
+- Local scan results stay local by default.
+- The page does not silently upload local inventory.
+- The project is a discovery and routing layer, not an execution engine, secret store, or cloud control plane.
+
+## 文档 · Docs
 
 - [docs/INSTALL.md](docs/INSTALL.md)
 - [docs/USAGE.md](docs/USAGE.md)
 - [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)
 - [docs/PROMPTS.md](docs/PROMPTS.md)
 - [docs/MAINTENANCE_WORKFLOW.md](docs/MAINTENANCE_WORKFLOW.md)
-
-## Boundary
-
-CD-Center is a discovery and routing layer. It does not replace the execution tool, auto-install third-party packages without operator action, or expose private inventory by default.
 
 ## License
 

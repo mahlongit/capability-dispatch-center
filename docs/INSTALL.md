@@ -11,7 +11,7 @@ Use the prompt in [PROMPTS.md](PROMPTS.md) with your AI tool. This is the lowest
 ```bash
 git clone https://github.com/mahlongit/capability-dispatch-center
 cd capability-dispatch-center
-bash scripts/install.sh
+bash scripts/install.sh all
 ```
 
 After that:
@@ -20,6 +20,19 @@ After that:
 cd-center doctor
 cd-center scan
 cd-center open
+```
+
+Install only one host integration:
+
+```bash
+bash scripts/install.sh codex
+bash scripts/install.sh claude-code
+bash scripts/install.sh copilot
+bash scripts/install.sh cursor
+bash scripts/install.sh trae
+bash scripts/install.sh qoder
+bash scripts/install.sh hermes
+bash scripts/install.sh openclaw
 ```
 
 ## 3. Manual Local Page

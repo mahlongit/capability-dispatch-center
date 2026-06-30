@@ -152,8 +152,19 @@
       grid-template-columns: 56px 56px;
     }
 
+    .lang-toggle {
+      display: inline-grid;
+      grid-template-columns: 56px 56px;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+    }
+
     .seg button,
-    .theme-toggle button {
+    .theme-toggle button,
+    .lang-toggle button {
       min-height: 38px;
       border: 0;
       border-radius: 10px;
@@ -163,7 +174,8 @@
     }
 
     .seg button.active,
-    .theme-toggle button.active {
+    .theme-toggle button.active,
+    .lang-toggle button.active {
       background: var(--accent);
       color: #fff;
     }
@@ -283,6 +295,56 @@
       grid-template-columns: minmax(0, 1fr) 300px;
       gap: 12px;
       flex: none;
+    }
+
+    .controls-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      flex: none;
+    }
+
+    .sort-panel {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 52px;
+      padding: 0 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      background: var(--panel);
+    }
+
+    .sort-label {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .sort-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .sort-buttons button,
+    .sort-direction {
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .sort-buttons button.active,
+    .sort-direction.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
     }
 
     .searchbox,
@@ -513,6 +575,22 @@
       word-break: break-word;
     }
 
+    .source-list {
+      margin-top: 10px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .source-entry {
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      word-break: break-word;
+    }
+
     @media (max-width: 1180px) {
       body {
         height: auto;
@@ -577,44 +655,48 @@
         <div class="mark">A</div>
         <div>
           <h1>CD-Center</h1>
-          <p>通用能力调度台。左边按场景筛选，中间选择能力，右边复制调用提示。</p>
+          <p id="brandSubtitle">通用能力调度台。左边按场景筛选，中间选择能力，右边复制调用提示。</p>
         </div>
       </div>
       <div class="toolbar">
         <div class="seg" aria-label="运行环境切换">
-          <button class="active" data-env="all">全部能力</button>
-          <button data-env="local">本地</button>
-          <button data-env="remote">远程</button>
+          <button class="active" data-env="all" id="envAll">全部能力</button>
+          <button data-env="local" id="envLocal">本地</button>
+          <button data-env="remote" id="envRemote">远程</button>
+        </div>
+        <div class="lang-toggle" aria-label="语言切换">
+          <button class="active" data-lang="zh">中</button>
+          <button data-lang="en">En</button>
         </div>
         <div class="theme-toggle" aria-label="主题切换">
-          <button data-theme="dark">黑</button>
-          <button class="active" data-theme="light">白</button>
+          <button data-theme="dark" id="themeDark">黑</button>
+          <button class="active" data-theme="light" id="themeLight">白</button>
         </div>
       </div>
     </header>
 
     <aside class="sidebar">
       <div class="panel" style="display:flex;flex-direction:column;min-height:0">
-        <div class="panel-title">场景</div>
+        <div class="panel-title" id="sceneTitle">场景</div>
         <div class="scene-list" id="sceneList"></div>
       </div>
       <div class="panel storage">
-        <div class="panel-title" style="padding:0 0 12px">范围说明</div>
-        <p>`全部能力` 会展示本地、远程和共享能力。筛选只改变视图，不会触发任何执行。</p>
+        <div class="panel-title" style="padding:0 0 12px" id="scopeTitle">范围说明</div>
+        <p id="scopeText">`全部能力` 会展示本地、远程和共享能力。筛选只改变视图，不会触发任何执行。</p>
         <div class="storage-grid">
-          <div class="storage-box"><strong>本地</strong><span>本机脚本或工具</span></div>
-          <div class="storage-box"><strong>远程</strong><span>API 或托管服务</span></div>
-          <div class="storage-box"><strong>共享</strong><span>两类环境均可用</span></div>
-          <div class="storage-box"><strong>只读</strong><span>选择能力不执行</span></div>
+          <div class="storage-box"><strong id="boxLocalTitle">本地</strong><span id="boxLocalText">本机脚本或工具</span></div>
+          <div class="storage-box"><strong id="boxRemoteTitle">远程</strong><span id="boxRemoteText">API 或托管服务</span></div>
+          <div class="storage-box"><strong id="boxSharedTitle">共享</strong><span id="boxSharedText">两类环境均可用</span></div>
+          <div class="storage-box"><strong id="boxReadonlyTitle">只读</strong><span id="boxReadonlyText">选择能力不执行</span></div>
         </div>
       </div>
       <div class="panel source-meta">
-        <div class="panel-title" style="padding:0 0 12px">当前数据源</div>
+        <div class="panel-title" style="padding:0 0 12px" id="sourceTitle">当前数据源</div>
         <p id="registryStatus">启动中，正在检查本机扫描结果。</p>
         <div class="meta-list">
-          <div class="meta-item"><strong>数据模式</strong><span id="registryMode">自动检测</span></div>
-          <div class="meta-item"><strong>能力数量</strong><span id="registryCount">-</span></div>
-          <div class="meta-item"><strong>扫描时间</strong><span id="registryTime">-</span></div>
+          <div class="meta-item"><strong id="registryModeLabel">数据模式</strong><span id="registryMode">自动检测</span></div>
+          <div class="meta-item"><strong id="registryCountLabel">能力数量</strong><span id="registryCount">-</span></div>
+          <div class="meta-item"><strong id="registryTimeLabel">扫描时间</strong><span id="registryTime">-</span></div>
         </div>
       </div>
     </aside>
@@ -626,6 +708,17 @@
           <input id="search" autocomplete="off" placeholder="搜索任务、能力或标识，例如：改 UI、网页调研、视频生成、代码审查" />
         </label>
         <div class="hint" id="hintText">默认优先加载 `capability-registry.local.json`，找不到时再回退到示例库。</div>
+      </div>
+      <div class="controls-row">
+        <div class="sort-panel">
+          <span class="sort-label" id="sortLabel">排序</span>
+          <div class="sort-buttons">
+            <button class="active" data-sort="recent" id="sortRecent">最近使用</button>
+            <button data-sort="installed" id="sortInstalled">安装时间</button>
+            <button data-sort="name" id="sortName">名称</button>
+          </div>
+          <button class="sort-direction" id="sortDirection" data-direction="desc">↓</button>
+        </div>
       </div>
       <div class="cards" id="cards"></div>
     </main>
@@ -657,17 +750,129 @@
     let activeEnv = "all";
     let activeScene = "全部";
     let activeTheme = "light";
+    let activeLang = "zh";
+    let sortBy = "recent";
+    let sortDirection = "desc";
     let selected = null;
 
-    const scenes = [
-      ["全部", () => true],
-      ["UI / 前端", item => item.cat === "UI / 前端"],
-      ["代码 / 后端", item => item.cat === "代码 / 后端"],
-      ["网页 / 自动化", item => item.cat === "网页 / 自动化"],
-      ["视频 / 内容", item => item.cat === "视频 / 内容"],
-      ["知识 / 记忆", item => item.cat === "知识 / 记忆"],
-      ["部署", item => item.cat === "部署"]
-    ];
+    const sceneKeys = ["全部", "UI / 前端", "代码 / 后端", "网页 / 自动化", "视频 / 内容", "知识 / 记忆", "部署"];
+
+    const translations = {
+      zh: {
+        brandSubtitle: "通用能力调度台。左边按场景筛选，中间选择能力，右边复制调用提示。",
+        envAll: "全部能力",
+        envLocal: "本地",
+        envRemote: "远程",
+        themeDark: "黑",
+        themeLight: "白",
+        sceneTitle: "场景",
+        scopeTitle: "范围说明",
+        scopeText: "`全部能力` 会展示本地、远程和共享能力。筛选只改变视图，不会触发任何执行。",
+        boxLocalTitle: "本地",
+        boxLocalText: "本机脚本或工具",
+        boxRemoteTitle: "远程",
+        boxRemoteText: "API 或托管服务",
+        boxSharedTitle: "共享",
+        boxSharedText: "两类环境均可用",
+        boxReadonlyTitle: "只读",
+        boxReadonlyText: "选择能力不执行",
+        sourceTitle: "当前数据源",
+        registryModeLabel: "数据模式",
+        registryCountLabel: "能力数量",
+        registryTimeLabel: "扫描时间",
+        searchPlaceholder: "搜索任务、能力或标识，例如：改 UI、网页调研、视频生成、代码审查",
+        hintLocal: "当前页面来自本机扫描结果。重新扫描后刷新页面即可更新。",
+        hintExample: "当前页面来自示例库。运行 `python3 scripts/scan_capabilities.py` 或 `cd-center scan` 后刷新即可切到本机结果。",
+        statusLocal: "已加载本机扫描结果。打开页面前应先运行扫描。",
+        statusExample: "未发现本机扫描结果，当前展示仓库自带示例库。",
+        modeLocal: "本机扫描结果",
+        modeExample: "示例库",
+        sortLabel: "排序",
+        sortRecent: "最近使用",
+        sortInstalled: "安装时间",
+        sortName: "名称",
+        noMatch: "没有匹配能力。换一个关键词或场景再试。",
+        detailTitle: "能力详情",
+        detailEmpty: "没有可用能力",
+        sourceBlock: "发现来源",
+        sourceHosts: "可用宿主",
+        routingNote: "路由提示",
+        promptBlock: "推荐调用提示",
+        copyButton: "复制调用提示",
+        copiedButton: "已复制",
+        themeBlock: "当前主题",
+        themeZhDark: "黑色主题",
+        themeZhLight: "白色主题",
+        themeNote: "这里只保留黑 / 白两套，不再让你选一堆风格层级。",
+        subskillNote: "建议：这是父级能力或工具箱。执行前先判断是否要继续细分到子 skill / 子规则 / 子代理。",
+        sceneLabels: {
+          "全部": "全部",
+          "UI / 前端": "UI / 前端",
+          "代码 / 后端": "代码 / 后端",
+          "网页 / 自动化": "网页 / 自动化",
+          "视频 / 内容": "视频 / 内容",
+          "知识 / 记忆": "知识 / 记忆",
+          "部署": "部署"
+        }
+      },
+      en: {
+        brandSubtitle: "Capability router. Filter on the left, inspect in the middle, copy the routing prompt on the right.",
+        envAll: "All",
+        envLocal: "Local",
+        envRemote: "Remote",
+        themeDark: "Dark",
+        themeLight: "Light",
+        sceneTitle: "Scenes",
+        scopeTitle: "Scope",
+        scopeText: "`All` shows local, remote, and shared capabilities. Filters only change the view and never execute anything.",
+        boxLocalTitle: "Local",
+        boxLocalText: "Local scripts or tools",
+        boxRemoteTitle: "Remote",
+        boxRemoteText: "APIs or hosted services",
+        boxSharedTitle: "Shared",
+        boxSharedText: "Works in both contexts",
+        boxReadonlyTitle: "Read-only",
+        boxReadonlyText: "Selection does not execute",
+        sourceTitle: "Data Source",
+        registryModeLabel: "Mode",
+        registryCountLabel: "Count",
+        registryTimeLabel: "Scanned At",
+        searchPlaceholder: "Search task, capability, or id. Example: UI polish, web research, video generation, code review",
+        hintLocal: "This page is using the local scanned registry. Rescan and refresh to update it.",
+        hintExample: "This page is using the example registry. Run `python3 scripts/scan_capabilities.py` or `cd-center scan`, then refresh to load local results.",
+        statusLocal: "Loaded from the local scanned registry. Scan before using the page.",
+        statusExample: "No local scan result was found. The page is showing the repository example registry.",
+        modeLocal: "Local scan result",
+        modeExample: "Example registry",
+        sortLabel: "Sort",
+        sortRecent: "Recent use",
+        sortInstalled: "Installed",
+        sortName: "Name",
+        noMatch: "No matching capability. Try another search or scene.",
+        detailTitle: "Capability Detail",
+        detailEmpty: "No capability available",
+        sourceBlock: "Discovered From",
+        sourceHosts: "Available In",
+        routingNote: "Routing Note",
+        promptBlock: "Recommended Prompt",
+        copyButton: "Copy prompt",
+        copiedButton: "Copied",
+        themeBlock: "Theme",
+        themeZhDark: "Dark theme",
+        themeZhLight: "Light theme",
+        themeNote: "Only two themes are kept here. No extra theme layers.",
+        subskillNote: "Suggestion: this looks like a parent capability or toolkit. Check whether you should route further into child skills, rules, or sub-agents first.",
+        sceneLabels: {
+          "全部": "All",
+          "UI / 前端": "UI / Frontend",
+          "代码 / 后端": "Code / Backend",
+          "网页 / 自动化": "Web / Automation",
+          "视频 / 内容": "Video / Content",
+          "知识 / 记忆": "Knowledge / Memory",
+          "部署": "Deployment"
+        }
+      }
+    };
 
     const sceneList = document.getElementById("sceneList");
     const cards = document.getElementById("cards");
@@ -678,6 +883,35 @@
     const registryCount = document.getElementById("registryCount");
     const registryTime = document.getElementById("registryTime");
     const hintText = document.getElementById("hintText");
+    const sortDirectionButton = document.getElementById("sortDirection");
+
+    function t(key) {
+      return translations[activeLang][key];
+    }
+
+    function capabilityName(item) {
+      return activeLang === "en" ? (item.displayNameEn || item.displayName || item.name) : (item.displayName || item.displayNameEn || item.name);
+    }
+
+    function capabilityDesc(item) {
+      return activeLang === "en" ? (item.descEn || item.desc || "") : (item.desc || item.descEn || "");
+    }
+
+    function capabilityPrompt(item) {
+      return activeLang === "en" ? (item.promptEn || item.prompt || "") : (item.prompt || item.promptEn || "");
+    }
+
+    function usageStorageKey(item) {
+      return `cd-center:last-used:${item.name}:${item.host || "unknown"}`;
+    }
+
+    function getLastUsed(item) {
+      return Number(window.localStorage.getItem(usageStorageKey(item)) || 0);
+    }
+
+    function markUsed(item) {
+      window.localStorage.setItem(usageStorageKey(item), String(Date.now()));
+    }
 
     function applyTheme(themeName) {
       activeTheme = themeName;
@@ -686,13 +920,43 @@
       document.querySelectorAll(".theme-toggle button").forEach(btn => btn.classList.toggle("active", btn.dataset.theme === themeName));
     }
 
+    function updateStaticText() {
+      document.getElementById("brandSubtitle").textContent = t("brandSubtitle");
+      document.getElementById("envAll").textContent = t("envAll");
+      document.getElementById("envLocal").textContent = t("envLocal");
+      document.getElementById("envRemote").textContent = t("envRemote");
+      document.getElementById("themeDark").textContent = t("themeDark");
+      document.getElementById("themeLight").textContent = t("themeLight");
+      document.getElementById("sceneTitle").textContent = t("sceneTitle");
+      document.getElementById("scopeTitle").textContent = t("scopeTitle");
+      document.getElementById("scopeText").textContent = t("scopeText");
+      document.getElementById("boxLocalTitle").textContent = t("boxLocalTitle");
+      document.getElementById("boxLocalText").textContent = t("boxLocalText");
+      document.getElementById("boxRemoteTitle").textContent = t("boxRemoteTitle");
+      document.getElementById("boxRemoteText").textContent = t("boxRemoteText");
+      document.getElementById("boxSharedTitle").textContent = t("boxSharedTitle");
+      document.getElementById("boxSharedText").textContent = t("boxSharedText");
+      document.getElementById("boxReadonlyTitle").textContent = t("boxReadonlyTitle");
+      document.getElementById("boxReadonlyText").textContent = t("boxReadonlyText");
+      document.getElementById("sourceTitle").textContent = t("sourceTitle");
+      document.getElementById("registryModeLabel").textContent = t("registryModeLabel");
+      document.getElementById("registryCountLabel").textContent = t("registryCountLabel");
+      document.getElementById("registryTimeLabel").textContent = t("registryTimeLabel");
+      search.placeholder = t("searchPlaceholder");
+      document.getElementById("sortLabel").textContent = t("sortLabel");
+      document.getElementById("sortRecent").textContent = t("sortRecent");
+      document.getElementById("sortInstalled").textContent = t("sortInstalled");
+      document.getElementById("sortName").textContent = t("sortName");
+      document.querySelectorAll(".lang-toggle button").forEach(btn => btn.classList.toggle("active", btn.dataset.lang === activeLang));
+    }
+
     function normalizeRegistry(payload, sourceLabel) {
       if (Array.isArray(payload)) {
         return {
           capabilities: payload,
           meta: {
             label: sourceLabel,
-            mode: sourceLabel === "local" ? "本机扫描结果" : "示例库",
+            mode: sourceLabel === "local" ? "local" : "example",
             capabilityCount: payload.length
           }
         };
@@ -702,7 +966,7 @@
         meta: {
           ...payload.meta,
           label: sourceLabel,
-          mode: sourceLabel === "local" ? "本机扫描结果" : "示例库"
+          mode: sourceLabel === "local" ? "local" : "example"
         }
       };
     }
@@ -710,14 +974,14 @@
     function updateRegistryMeta() {
       const count = registryMeta?.capabilityCount ?? capabilities.length;
       registryStatus.textContent = registrySource === "local"
-        ? "已加载本机扫描结果。打开页面前应先运行扫描。"
-        : "未发现本机扫描结果，当前展示仓库自带示例库。";
-      registryMode.textContent = registryMeta?.mode || "未知";
+        ? t("statusLocal")
+        : t("statusExample");
+      registryMode.textContent = registrySource === "local" ? t("modeLocal") : t("modeExample");
       registryCount.textContent = String(count);
       registryTime.textContent = registryMeta?.generatedAt || "-";
       hintText.textContent = registrySource === "local"
-        ? "当前页面来自本机扫描结果。重新扫描后刷新页面即可更新。"
-        : "当前页面来自示例库。运行 `python3 scripts/scan_capabilities.py` 或 `cd-center scan` 后刷新即可切到本机结果。";
+        ? t("hintLocal")
+        : t("hintExample");
     }
 
     async function fetchRegistry(url, sourceLabel) {
@@ -757,21 +1021,41 @@
 
     function filtered() {
       const q = search.value.trim().toLowerCase();
-      return capabilities.filter(item => {
+      const list = capabilities.filter(item => {
 	        const envOk = activeEnv === "all" || item.env.includes(activeEnv) || item.env.includes("shared");
         const sceneOk = activeScene === "全部" || item.cat === activeScene;
-        const qOk = !q || [item.name, item.displayName, item.desc, item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", ...item.tags].join(" ").toLowerCase().includes(q);
+        const qOk = !q || [item.name, item.displayName, item.displayNameEn || "", item.desc || "", item.descEn || "", item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", ...(item.availableIn || []), ...item.tags].join(" ").toLowerCase().includes(q);
         return envOk && sceneOk && qOk;
+      });
+      const direction = sortDirection === "asc" ? 1 : -1;
+      return list.sort((a, b) => {
+        if (sortBy === "name") {
+          return capabilityName(a).localeCompare(capabilityName(b), activeLang === "en" ? "en" : "zh") * direction;
+        }
+        if (sortBy === "installed") {
+          const aTime = Date.parse(a.installedAt || 0) || 0;
+          const bTime = Date.parse(b.installedAt || 0) || 0;
+          return (aTime - bTime) * direction;
+        }
+        const aUsed = getLastUsed(a);
+        const bUsed = getLastUsed(b);
+        if (aUsed !== bUsed) {
+          return (aUsed - bUsed) * direction;
+        }
+        const aInstalled = Date.parse(a.installedAt || 0) || 0;
+        const bInstalled = Date.parse(b.installedAt || 0) || 0;
+        return (aInstalled - bInstalled) * direction;
       });
     }
 
     function renderScenes() {
-      sceneList.innerHTML = scenes.map(([label, test]) => {
+      sceneList.innerHTML = sceneKeys.map((label) => {
+        const test = label === "全部" ? (() => true) : ((item) => item.cat === label);
         const count = capabilities.filter(item => {
           const envOk = activeEnv === "all" || item.env.includes(activeEnv) || item.env.includes("shared");
           return envOk && test(item);
         }).length;
-        return `<button class="scene-btn ${label === activeScene ? "active" : ""}" data-scene="${label}"><span>${label}</span><span class="scene-count">${count}</span></button>`;
+        return `<button class="scene-btn ${label === activeScene ? "active" : ""}" data-scene="${label}"><span>${translations[activeLang].sceneLabels[label] || label}</span><span class="scene-count">${count}</span></button>`;
       }).join("");
       document.querySelectorAll(".scene-btn").forEach(btn => btn.addEventListener("click", () => {
         activeScene = btn.dataset.scene;
@@ -787,14 +1071,14 @@
         <article class="card ${selected && item.name === selected.name ? "active" : ""}" data-name="${item.name}">
           <div class="icon">${item.icon}</div>
           <div>
-            <h3>${item.displayName}</h3>
+            <h3>${capabilityName(item)}</h3>
             <div class="skill-id">${item.name}</div>
-            <p>${item.desc}</p>
+            <p>${capabilityDesc(item)}</p>
             <div class="tags">${item.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div>
           </div>
           <div class="score">${item.score}</div>
         </article>
-      `).join("") || `<div class="panel" style="padding:18px;color:var(--muted)">没有匹配能力。换一个关键词或场景再试。</div>`;
+      `).join("") || `<div class="panel" style="padding:18px;color:var(--muted)">${t("noMatch")}</div>`;
 
       document.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => {
         selected = capabilities.find(item => item.name === card.dataset.name);
@@ -805,42 +1089,55 @@
 
     function renderDetail() {
       if (!selected) {
-        detail.innerHTML = `<div class="detail-kicker">能力详情</div><h2>没有可用能力</h2>`;
+        detail.innerHTML = `<div class="detail-kicker">${t("detailTitle")}</div><h2>${t("detailEmpty")}</h2>`;
         return;
       }
       detail.innerHTML = `
-        <div class="detail-kicker">能力详情</div>
-        <h2>${selected.displayName}</h2>
+        <div class="detail-kicker">${t("detailTitle")}</div>
+        <h2>${capabilityName(selected)}</h2>
         <div class="detail-id">${selected.name}</div>
-        <p>${selected.desc}</p>
+        <p>${capabilityDesc(selected)}</p>
         <div class="tags" style="margin-top:12px">${selected.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div>
 
         ${selected.sourcePath ? `
         <div class="block">
-          <h3>发现来源</h3>
+          <h3>${t("sourceBlock")}</h3>
           <div class="style-note"><strong>${selected.host || "local"}</strong> · ${selected.sourceType || "capability"}<br>${selected.sourcePathDisplay || selected.sourcePath}</div>
+          ${Array.isArray(selected.availableIn) && selected.availableIn.length > 1 ? `<div class="source-list"><div class="source-entry"><strong>${t("sourceHosts")}</strong><br>${selected.availableIn.join(", ")}</div></div>` : ""}
+        </div>
+        ` : ""}
+
+        ${selected.requiresSubskills ? `
+        <div class="block">
+          <h3>${t("routingNote")}</h3>
+          <div class="style-note">${t("subskillNote")}</div>
         </div>
         ` : ""}
 
         <div class="block">
-          <h3>推荐调用提示</h3>
-          <div class="prompt">${selected.prompt}</div>
-          <button class="copy" id="copyPrompt">复制调用提示</button>
+          <h3>${t("promptBlock")}</h3>
+          <div class="prompt">${capabilityPrompt(selected)}</div>
+          <button class="copy" id="copyPrompt">${t("copyButton")}</button>
         </div>
 
         <div class="block">
-          <h3>当前主题</h3>
-          <div class="style-note"><strong>${activeTheme === "dark" ? "黑色主题" : "白色主题"}</strong>：这里只保留黑 / 白两套，不再让你选一堆风格层级。</div>
+          <h3>${t("themeBlock")}</h3>
+          <div class="style-note"><strong>${activeTheme === "dark" ? t("themeZhDark") : t("themeZhLight")}</strong>：${t("themeNote")}</div>
         </div>
       `;
       document.getElementById("copyPrompt").addEventListener("click", async () => {
-        await navigator.clipboard.writeText(selected.prompt);
-        document.getElementById("copyPrompt").textContent = "已复制";
-        setTimeout(() => document.getElementById("copyPrompt").textContent = "复制调用提示", 1200);
+        await navigator.clipboard.writeText(capabilityPrompt(selected));
+        markUsed(selected);
+        document.getElementById("copyPrompt").textContent = t("copiedButton");
+        setTimeout(() => document.getElementById("copyPrompt").textContent = t("copyButton"), 1200);
+        renderCards();
+        renderDetail();
       });
     }
 
     function renderAll() {
+      updateStaticText();
+      updateRegistryMeta();
       renderScenes();
       renderCards();
       renderDetail();
@@ -857,6 +1154,31 @@
 
     document.querySelectorAll(".theme-toggle button").forEach(btn => btn.addEventListener("click", () => applyTheme(btn.dataset.theme)));
 
+    document.querySelectorAll(".lang-toggle button").forEach(btn => btn.addEventListener("click", () => {
+      activeLang = btn.dataset.lang;
+      renderAll();
+    }));
+
+    document.querySelectorAll(".sort-buttons button").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll(".sort-buttons button").forEach(node => node.classList.remove("active"));
+      btn.classList.add("active");
+      sortBy = btn.dataset.sort;
+      const first = filtered()[0];
+      if (first) selected = first;
+      renderCards();
+      renderDetail();
+    }));
+
+    sortDirectionButton.addEventListener("click", () => {
+      sortDirection = sortDirection === "desc" ? "asc" : "desc";
+      sortDirectionButton.dataset.direction = sortDirection;
+      sortDirectionButton.textContent = sortDirection === "desc" ? "↓" : "↑";
+      const first = filtered()[0];
+      if (first) selected = first;
+      renderCards();
+      renderDetail();
+    });
+
     search.addEventListener("input", () => {
       const first = filtered()[0];
       if (first) selected = first;
@@ -864,6 +1186,7 @@
       renderDetail();
     });
 
+    sortDirectionButton.textContent = "↓";
     applyTheme("light");
     loadRegistry();
   </script>

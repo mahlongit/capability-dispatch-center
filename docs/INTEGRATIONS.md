@@ -6,14 +6,14 @@ CD-Center is designed to sit above the execution tool, not replace it.
 
 | Tool | Current Support | Usage |
 |---|---|---|
-| Codex / CDX | direct | Prompt-based routing, local scan, local page |
-| Claude Code | direct | Prompt-based routing, local scan, local page |
-| Cursor | direct | Prompt-based routing, local scan, local page |
-| GitHub Copilot | direct | Prompt-based routing, local scan, local page |
-| OpenClaw | direct | Prompt-based routing, local scan, local page |
-| Hermes Agent | direct | Prompt-based routing, local scan, local page |
-| Qoder | direct | Prompt-based routing, local scan, local page |
-| Trae | direct | Prompt-based routing, local scan, local page |
+| Codex / CDX | stub + page | project agent stub + local page |
+| Claude Code | stub + page | global agent stub + local page |
+| Cursor | stub + page | project rule stub + local page |
+| GitHub Copilot | stub + page | global agent stub + local page |
+| OpenClaw | stub + page | global skill stub + local page |
+| Hermes Agent | stub + page | global skill stub + local page |
+| Qoder | stub + page | global agent stub + local page |
+| Trae | stub + page | project rule stub + local page |
 
 ## Integration Modes
 
@@ -28,4 +28,4 @@ CD-Center is designed to sit above the execution tool, not replace it.
 
 ## Current Boundary
 
-The project does not yet auto-install rules, skills, or agents into every ecosystem. It provides a discovery and routing layer that fits across multiple ecosystems with the same local scan result.
+The project now writes minimal integration stubs for common hosts through `scripts/install.sh`. These stubs are intentionally thin: they tell the host to route through CD-Center first. They do not replace the host's own execution model.

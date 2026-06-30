@@ -7,7 +7,7 @@ import json
 import re
 import sys
 import tomllib
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +15,23 @@ from typing import Iterable
 
 
 VERSION = "0.2.0"
+
+HOST_LABELS = {
+    "codex": {"zh": "Codex / CDX", "en": "Codex / CDX"},
+    "agents": {"zh": "通用 skills", "en": "Generic skills"},
+    "hermes": {"zh": "Hermes", "en": "Hermes"},
+    "workbuddy": {"zh": "WorkBuddy", "en": "WorkBuddy"},
+    "codewhale": {"zh": "CodeWhale", "en": "CodeWhale"},
+    "claude-code": {"zh": "Claude Code", "en": "Claude Code"},
+    "github-copilot": {"zh": "GitHub Copilot", "en": "GitHub Copilot"},
+    "cursor": {"zh": "Cursor", "en": "Cursor"},
+    "trae": {"zh": "Trae", "en": "Trae"},
+    "qoder": {"zh": "Qoder", "en": "Qoder"},
+    "qwen": {"zh": "Qwen Code", "en": "Qwen Code"},
+    "opencode": {"zh": "OpenCode", "en": "OpenCode"},
+    "local-config": {"zh": "本机配置", "en": "Local config"},
+    "project": {"zh": "当前项目", "en": "Current project"},
+}
 
 
 @dataclass(frozen=True)
@@ -51,15 +68,15 @@ def slug_to_title(value: str) -> str:
 
 def infer_category(text: str) -> str:
     value = text.lower()
-    if any(token in value for token in ("ui", "frontend", "design", "cursor", "component", "visual", "css")):
+    if any(token in value for token in ("ui", "ux", "frontend", "front end", "design", "cursor", "component", "visual", "css", "accessibility", "brand")):
         return "UI / 前端"
-    if any(token in value for token in ("deploy", "release", "vercel", "netlify", "cloud", "render", "wrangler", "ops")):
+    if any(token in value for token in ("deploy", "release", "vercel", "netlify", "render", "wrangler", "ops", "devops", "sre", "platform", "infrastructure")):
         return "部署"
-    if any(token in value for token in ("web", "browser", "search", "scrape", "http", "automation", "mcp")):
+    if any(token in value for token in ("web", "browser", "search", "scrape", "http", "automation", "mcp", "crawler", "api", "integration")):
         return "网页 / 自动化"
-    if any(token in value for token in ("video", "audio", "media", "caption", "podcast", "content")):
+    if any(token in value for token in ("video", "audio", "media", "caption", "podcast", "editing", "voice", "animation", "storyboard")):
         return "视频 / 内容"
-    if any(token in value for token in ("memory", "knowledge", "docs", "document", "research", "prompt", "agent")):
+    if any(token in value for token in ("memory", "knowledge", "docs", "document", "research", "prompt", "writer", "study", "brief")):
         return "知识 / 记忆"
     return "代码 / 后端"
 
@@ -82,6 +99,10 @@ def score_for(source_type: str) -> str:
         "rule": "8.1",
         "extension": "8.0",
     }.get(source_type, "8.0")
+
+
+def english_title(value: str) -> str:
+    return slug_to_title(value)
 
 
 def icon_for(name: str) -> str:
@@ -122,13 +143,84 @@ def summarize_text(text: str) -> tuple[str | None, str | None]:
     return name or (heading_match.group(1).strip() if heading_match else None), description or (paragraph_match.group(1).strip() if paragraph_match else None)
 
 
-def build_prompt(display_name: str, description: str, host: str, source_type: str) -> str:
+def host_label(host: str, lang: str) -> str:
+    return HOST_LABELS.get(host, {}).get(lang, host)
+
+
+def default_description(host: str, source_type: str, raw_name: str) -> tuple[str, str]:
+    host_zh = host_label(host, "zh")
+    host_en = host_label(host, "en")
+    if source_type == "skill":
+        return (
+            f"从 {host_zh} 发现的本地 skill，可用于任务路由或在对应环境中执行。",
+            f"Discovered local skill from {host_en}. Use it for routing or execution in the matching host.",
+        )
+    if source_type == "agent":
+        return (
+            f"从 {host_zh} 发现的 agent / prompt 入口，适合在对应工具里直接调用。",
+            f"Discovered agent or prompt entry from {host_en}. Best used inside the matching tool.",
+        )
+    if source_type == "rule":
+        return (
+            f"从 {host_zh} 发现的规则文件，适合作为该工具内的约束或提示上下文。",
+            f"Discovered rule file from {host_en}. Best used as guidance inside the matching tool.",
+        )
+    if source_type == "plugin":
+        return (
+            f"从 {host_zh} 发现的插件目录，通常需要在宿主工具中调用，而不是在 CD-Center 中直接执行。",
+            f"Discovered plugin directory from {host_en}. Usually used through its host tool, not directly inside CD-Center.",
+        )
+    if source_type == "mcp":
+        return (
+            f"从本机配置中发现的 MCP 服务 `{raw_name}`，通常需要通过支持 MCP 的执行器接入。",
+            f"Discovered MCP service '{raw_name}' from local config. Usually used through an MCP-capable runtime.",
+        )
     return (
-        f"先检查并调用 {display_name}。\n"
-        f"用途：{description}\n"
-        f"来源：{host} {source_type}\n"
-        "要求：先说明为什么选它，再决定是否要组合其他 skill / plugin / MCP / agent。"
+        f"从 {host_zh} 发现的能力项。",
+        f"Discovered capability from {host_en}.",
     )
+
+
+def infer_requires_subskills(raw_name: str, description: str) -> bool:
+    value = " ".join([raw_name, description]).lower()
+    markers = ("suite", "toolkit", "collection", "workflow", "orchestrator", "framework", "stack", "multi-agent", "agency", "platform")
+    return any(marker in value for marker in markers)
+
+
+def build_prompts(display_name: str, description_zh: str, description_en: str, host: str, source_type: str, needs_subskills: bool) -> tuple[str, str]:
+    host_zh = host_label(host, "zh")
+    host_en = host_label(host, "en")
+    external_hosts = {"claude-code", "github-copilot", "cursor", "trae", "qoder", "qwen", "hermes", "workbuddy", "codewhale", "opencode"}
+    if host in external_hosts or source_type in {"plugin", "mcp", "rule"}:
+        zh = [
+            f"先检查 {display_name} 是否应该在 {host_zh} 中使用。",
+            f"用途：{description_zh}",
+            f"来源：{host_zh} / {source_type}",
+            "说明：这类能力通常在对应宿主工具中直接使用；如果当前不在对应工具里，先把它当作外部能力或参考规则，不要假设能在 CD-Center 内直接执行。",
+        ]
+        en = [
+            f"First confirm whether {display_name} should be used inside {host_en}.",
+            f"Purpose: {description_en}",
+            f"Source: {host_en} / {source_type}",
+            "Note: This kind of capability is usually executed in its host tool. If you are not in that tool, treat it as an external capability or reference rule rather than directly runnable inside CD-Center.",
+        ]
+    else:
+        zh = [
+            f"先检查并调用 {display_name}。",
+            f"用途：{description_zh}",
+            f"来源：{host_zh} / {source_type}",
+            "要求：先说明为什么选它，再决定是否要组合其他 skill / plugin / MCP / agent。",
+        ]
+        en = [
+            f"Check and use {display_name} first.",
+            f"Purpose: {description_en}",
+            f"Source: {host_en} / {source_type}",
+            "Requirement: explain why it was selected before combining it with other skills, plugins, MCP services, or agents.",
+        ]
+    if needs_subskills:
+        zh.append("附加说明：这更像父级能力或工具箱。执行前先判断是否需要继续细分到子 skill / 子规则 / 子代理。")
+        en.append("Extra note: this looks like a parent capability or toolkit. Check whether you should route further into child skills, rules, or sub-agents before execution.")
+    return "\n".join(zh), "\n".join(en)
 
 
 def build_capability(
@@ -140,26 +232,39 @@ def build_capability(
     raw_description: str | None,
 ) -> dict[str, object]:
     display_name = slug_to_title(raw_name)
-    description = raw_description or f"Discovered {source_type} from {host}."
+    display_name_en = english_title(raw_name)
+    default_zh, default_en = default_description(host, source_type, raw_name)
+    description = raw_description or default_en
+    description_zh = raw_description if raw_description and re.search(r"[\u4e00-\u9fff]", raw_description) else default_zh
+    description_en = raw_description if raw_description and not re.search(r"[\u4e00-\u9fff]", raw_description) else default_en
     category = infer_category(" ".join([raw_name, display_name, description, host, source_type]))
     env = infer_env(host, source_type)
     tags = [host, source_type, source_path.parent.name or source_path.name]
     source_path_str = str(source_path)
     source_display = source_path_str.replace(str(Path.home()), "~")
+    needs_subskills = infer_requires_subskills(raw_name, description)
+    prompt_zh, prompt_en = build_prompts(display_name, description_zh, description_en, host, source_type, needs_subskills)
+    installed_at = datetime.fromtimestamp(source_path.stat().st_mtime, tz=timezone.utc).isoformat()
     return {
         "name": raw_name,
         "displayName": display_name,
+        "displayNameEn": display_name_en,
         "cat": category,
         "env": env,
         "icon": icon_for(display_name),
         "score": score_for(source_type),
-        "desc": description,
+        "desc": description_zh,
+        "descEn": description_en,
         "tags": tags,
-        "prompt": build_prompt(display_name, description, host, source_type),
+        "prompt": prompt_zh,
+        "promptEn": prompt_en,
         "sourceType": source_type,
         "host": host,
         "sourcePath": source_path_str,
         "sourcePathDisplay": source_display,
+        "installedAt": installed_at,
+        "availableIn": [host],
+        "requiresSubskills": needs_subskills,
     }
 
 
@@ -300,14 +405,35 @@ def scan_single_files(project_root: Path) -> Iterable[dict[str, object]]:
 
 
 def unique_capabilities(items: Iterable[dict[str, object]]) -> list[dict[str, object]]:
-    deduped: list[dict[str, object]] = []
-    seen: set[str] = set()
+    grouped: dict[str, dict[str, object]] = {}
     for item in items:
-        key = f"{item['host']}::{item['sourceType']}::{item['sourcePath']}"
-        if key in seen:
+        desc_basis = str(item.get("descEn") or item.get("desc") or "")[:160].lower()
+        key = "::".join([
+            str(item["sourceType"]),
+            re.sub(r"[^a-z0-9]+", "-", str(item["name"]).lower()).strip("-"),
+            desc_basis,
+        ])
+        if key not in grouped:
+            grouped[key] = item
+            grouped[key]["sourcePaths"] = [item["sourcePath"]]
+            grouped[key]["sourcePathDisplays"] = [item["sourcePathDisplay"]]
+            grouped[key]["availableIn"] = list(dict.fromkeys(item.get("availableIn", [item["host"]])))
+            grouped[key]["sourceCount"] = 1
             continue
-        seen.add(key)
-        deduped.append(item)
+        merged = grouped[key]
+        merged["sourceCount"] = int(merged.get("sourceCount", 1)) + 1
+        merged["availableIn"] = list(dict.fromkeys(list(merged.get("availableIn", [])) + [item["host"]]))
+        merged["sourcePaths"] = list(dict.fromkeys(list(merged.get("sourcePaths", [])) + [item["sourcePath"]]))
+        merged["sourcePathDisplays"] = list(dict.fromkeys(list(merged.get("sourcePathDisplays", [])) + [item["sourcePathDisplay"]]))
+        if str(item.get("installedAt", "")) > str(merged.get("installedAt", "")):
+            merged["installedAt"] = item["installedAt"]
+            merged["sourcePath"] = item["sourcePath"]
+            merged["sourcePathDisplay"] = item["sourcePathDisplay"]
+        if item["host"] not in str(merged.get("host", "")):
+            merged["host"] = "/".join(merged["availableIn"])
+        if item.get("requiresSubskills"):
+            merged["requiresSubskills"] = True
+    deduped = list(grouped.values())
     return sorted(deduped, key=lambda entry: (str(entry["cat"]), str(entry["displayName"]).lower()))
 
 

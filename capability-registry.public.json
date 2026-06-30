@@ -5,10 +5,13 @@
     "icon": "UI",
     "name": "interface-review",
     "displayName": "界面评审",
+    "displayNameEn": "Interface Review",
     "score": "9.0",
     "desc": "用于检查界面结构、信息层级、响应式布局、可访问性和交互完整性。",
+    "descEn": "Review interface structure, information hierarchy, responsive layout, accessibility, and interaction completeness.",
     "tags": ["界面", "体验", "可访问性"],
-    "prompt": "请先进行界面评审：检查信息层级、交互状态、响应式表现、可访问性和明显视觉问题，再给出修改建议。"
+    "prompt": "请先进行界面评审：检查信息层级、交互状态、响应式表现、可访问性和明显视觉问题，再给出修改建议。",
+    "promptEn": "Start with an interface review: check hierarchy, interaction states, responsive behavior, accessibility, and visible UI issues before proposing changes."
   },
   {
     "cat": "UI / 前端",
@@ -16,10 +19,13 @@
     "icon": "FE",
     "name": "frontend-builder",
     "displayName": "前端实现",
+    "displayNameEn": "Frontend Build",
     "score": "8.8",
     "desc": "用于把明确的产品需求实现成可运行的前端页面、组件或工具界面。",
+    "descEn": "Implement explicit product requirements as a working frontend page, component, or tool interface.",
     "tags": ["前端", "组件", "实现"],
-    "prompt": "请按现有项目模式实现前端需求，先确认设计系统和交互状态，再编码、验证并回报改动。"
+    "prompt": "请按现有项目模式实现前端需求，先确认设计系统和交互状态，再编码、验证并回报改动。",
+    "promptEn": "Implement the frontend request using the current project pattern. Confirm the design system and interaction states first, then code, verify, and report changes."
   },
   {
     "cat": "代码 / 后端",
@@ -27,10 +33,13 @@
     "icon": "CR",
     "name": "code-review",
     "displayName": "代码审查",
+    "displayNameEn": "Code Review",
     "score": "9.1",
     "desc": "用于发现代码缺陷、边界条件、回归风险、缺失测试和维护性问题。",
+    "descEn": "Find defects, edge cases, regression risk, missing tests, and maintainability issues.",
     "tags": ["审查", "质量", "测试"],
-    "prompt": "请以代码审查方式检查本次变更，优先列出 bug、风险、回归点和缺失测试，并附文件位置。"
+    "prompt": "请以代码审查方式检查本次变更，优先列出 bug、风险、回归点和缺失测试，并附文件位置。",
+    "promptEn": "Review the change as a code review. List bugs, risks, regression points, and missing tests first, with file references."
   },
   {
     "cat": "代码 / 后端",
@@ -38,10 +47,13 @@
     "icon": "API",
     "name": "api-implementation",
     "displayName": "接口实现",
+    "displayNameEn": "API Implementation",
     "score": "8.4",
     "desc": "用于设计或修改服务端接口、数据校验、错误处理和调用契约。",
+    "descEn": "Design or modify backend APIs, validation, error handling, and calling contracts.",
     "tags": ["接口", "后端", "契约"],
-    "prompt": "请实现或调整接口逻辑，先确认输入输出契约、错误处理和测试路径，再修改代码。"
+    "prompt": "请实现或调整接口逻辑，先确认输入输出契约、错误处理和测试路径，再修改代码。",
+    "promptEn": "Implement or adjust the API logic. Confirm input/output contracts, error handling, and test paths before changing code."
   },
   {
     "cat": "网页 / 自动化",
@@ -49,10 +61,13 @@
     "icon": "WEB",
     "name": "web-research",
     "displayName": "网页调研",
+    "displayNameEn": "Web Research",
     "score": "8.7",
     "desc": "用于读取公开网页、文档、社区资料或产品页面，并整理可信证据。",
+    "descEn": "Read public webpages, documents, community materials, or product pages and summarize credible evidence.",
     "tags": ["网页", "调研", "证据"],
-    "prompt": "请先读取公开资料并给出来源，再总结结论、证据和不确定项。涉及登录态时先停下确认。"
+    "prompt": "请先读取公开资料并给出来源，再总结结论、证据和不确定项。涉及登录态时先停下确认。",
+    "promptEn": "Read public sources first and cite them, then summarize conclusions, evidence, and uncertainties. Stop before touching login-gated content."
   },
   {
     "cat": "视频 / 内容",
@@ -60,10 +75,13 @@
     "icon": "VID",
     "name": "content-production",
     "displayName": "内容制作",
+    "displayNameEn": "Content Production",
     "score": "8.1",
     "desc": "用于脚本、分镜、短视频素材整理、字幕和发布文案生成。",
+    "descEn": "Draft scripts, storyboards, short-form assets, captions, and publishing copy.",
     "tags": ["内容", "视频", "脚本"],
-    "prompt": "请按目标受众和发布平台制作内容方案，包含脚本、结构、素材需求和验收标准。"
+    "prompt": "请按目标受众和发布平台制作内容方案，包含脚本、结构、素材需求和验收标准。",
+    "promptEn": "Create a content plan for the target audience and publishing channel, including script, structure, asset needs, and acceptance criteria."
   },
   {
     "cat": "知识 / 记忆",
@@ -71,10 +89,13 @@
     "icon": "KB",
     "name": "knowledge-base",
     "displayName": "知识整理",
+    "displayNameEn": "Knowledge Base",
     "score": "8.3",
     "desc": "用于整理项目知识、决策记录、维护说明和可复用模板。",
+    "descEn": "Organize project knowledge, decision records, maintenance notes, and reusable templates.",
     "tags": ["知识库", "文档", "决策"],
-    "prompt": "请把现有资料整理成可维护文档，区分事实、决策、待确认项和后续动作。"
+    "prompt": "请把现有资料整理成可维护文档，区分事实、决策、待确认项和后续动作。",
+    "promptEn": "Turn the existing material into maintainable documentation and separate facts, decisions, open questions, and follow-up actions."
   },
   {
     "cat": "部署",
@@ -82,10 +103,13 @@
     "icon": "DEP",
     "name": "deployment-check",
     "displayName": "部署检查",
+    "displayNameEn": "Deployment Check",
     "score": "8.5",
     "desc": "用于发布前检查构建、环境变量、访问权限、回滚方式和部署验证。",
+    "descEn": "Check builds, environment variables, permissions, rollback, and deployment validation before release.",
     "tags": ["部署", "验证", "回滚"],
-    "prompt": "请先做部署预检，确认构建命令、环境变量、目标平台、回滚方式和验收路径，再执行发布。"
+    "prompt": "请先做部署预检，确认构建命令、环境变量、目标平台、回滚方式和验收路径，再执行发布。",
+    "promptEn": "Run deployment preflight checks first. Confirm the build command, environment variables, target platform, rollback path, and acceptance flow before releasing."
   },
   {
     "cat": "代码 / 后端",
@@ -93,10 +117,13 @@
     "icon": "SEC",
     "name": "security-review",
     "displayName": "安全审查",
+    "displayNameEn": "Security Review",
     "score": "9.2",
     "desc": "用于检查敏感信息泄露、权限边界、依赖风险、输入校验和发布前安全缺口。",
+    "descEn": "Check disclosure risk, permission boundaries, dependency risk, input validation, and release blockers.",
     "tags": ["安全", "敏感信息", "权限"],
-    "prompt": "请先做安全审查：检查密钥、账号、token、cookie、私有路径、权限边界、输入校验和依赖风险；发现问题先报告，不要继续发布。"
+    "prompt": "请先做安全审查：检查密钥、账号、token、cookie、私有路径、权限边界、输入校验和依赖风险；发现问题先报告，不要继续发布。",
+    "promptEn": "Start with a security review: check secrets, accounts, tokens, cookies, private paths, permission boundaries, input validation, and dependency risk. Report issues before continuing."
   },
   {
     "cat": "部署",
@@ -104,9 +131,12 @@
     "icon": "QA",
     "name": "release-acceptance",
     "displayName": "发布验收",
+    "displayNameEn": "Release Acceptance",
     "score": "9.0",
     "desc": "用于在提交或发布前确认构建、验证命令、敏感词扫描、仓库可见性和回滚说明。",
+    "descEn": "Confirm builds, validation commands, sensitive-term scans, repository visibility, and rollback notes before release.",
     "tags": ["验收", "发布", "检查清单"],
-    "prompt": "请按发布验收流程检查：验证命令是否通过、敏感词扫描是否干净、仓库可见性是否正确、提交内容是否完整、回滚方式是否明确。"
+    "prompt": "请按发布验收流程检查：验证命令是否通过、敏感词扫描是否干净、仓库可见性是否正确、提交内容是否完整、回滚方式是否明确。",
+    "promptEn": "Run release acceptance checks: validate commands, sensitive-term scan, repository visibility, commit completeness, and rollback clarity."
   }
 ]
