@@ -1,4 +1,4 @@
-# CD-Center
+# CD-Center 本地skill、插件等能力可视化调度中心
 
 > A local capability discovery and dispatch skill for AI-assisted workflows.
 
