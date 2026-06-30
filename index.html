@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>能力调度中心</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #faf9f5;
+      --bg-2: #f4eee4;
+      --panel: #fffaf3;
+      --panel-2: #f6f0e7;
+      --panel-3: #ece3d7;
+      --ink: #171614;
+      --ink-2: #3d3d3a;
+      --muted: #6c6a64;
+      --line: #e6dfd8;
+      --accent: #cc785c;
+      --accent-2: #a9583e;
+      --chip: #f4ece0;
+      --warn: #b98634;
+      --success: #5db872;
+      --shadow: 0 14px 36px rgba(62, 41, 19, .10);
+      --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      --font-body: "SF Pro Text", "Inter", system-ui, sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 18px;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0b0d12;
+      --bg-2: #121621;
+      --panel: #121722;
+      --panel-2: #171d2a;
+      --panel-3: #20283a;
+      --ink: #eef2ff;
+      --ink-2: #d5ddf6;
+      --muted: #8f9bb8;
+      --line: #293244;
+      --accent: #7487ff;
+      --accent-2: #96a7ff;
+      --chip: #1a2130;
+      --warn: #c8a03d;
+      --success: #2bb673;
+      --shadow: 0 16px 44px rgba(0, 0, 0, .28);
+      --font-display: "SF Pro Display", "Inter", system-ui, sans-serif;
+      --font-body: "SF Pro Text", "Inter", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top left, rgba(204, 120, 92, .12), transparent 24%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      color: var(--ink);
+      font: 14px/1.5 var(--font-body);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 264px minmax(0, 1fr) 360px;
+      grid-template-rows: 72px minmax(0, 1fr);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .topbar {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(250, 249, 245, .88);
+      backdrop-filter: blur(16px);
+    }
+    :root[data-theme="dark"] .topbar { background: rgba(10, 12, 18, .82); }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: linear-gradient(180deg, var(--panel-3), var(--panel));
+      border: 1px solid var(--line);
+      font: 700 18px/1 var(--font-display);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font: 600 21px/1.1 var(--font-display);
+      letter-spacing: -.02em;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .seg,
+    .theme-toggle {
+      display: inline-grid;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+    }
+
+    .seg {
+      grid-template-columns: 132px 76px 76px;
+    }
+
+    .theme-toggle {
+      grid-template-columns: 56px 56px;
+    }
+
+    .seg button,
+    .theme-toggle button {
+      min-height: 38px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .seg button.active,
+    .theme-toggle button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .sidebar,
+    .main,
+    .detail {
+      min-width: 0;
+      min-height: 0;
+      padding: 18px;
+    }
+
+    .sidebar {
+      padding-left: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .detail {
+      padding-right: 24px;
+      overflow: hidden;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      min-height: 0;
+    }
+
+    .panel-title {
+      padding: 16px 16px 0;
+      color: var(--muted);
+      font: 600 12px/1.2 var(--font-display);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .scene-list {
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    .scene-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 14px;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--muted);
+      text-align: left;
+    }
+
+    .scene-btn.active {
+      background: rgba(116, 135, 255, .14);
+      color: var(--ink);
+    }
+
+    .scene-count {
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .storage {
+      padding: 14px;
+    }
+
+    .storage p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .storage-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .storage-box {
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+
+    .storage-box strong {
+      display: block;
+      font: 600 16px/1.15 var(--font-display);
+    }
+
+    .storage-box span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 12px;
+      flex: none;
+    }
+
+    .searchbox,
+    .hint {
+      min-height: 52px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .searchbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 14px;
+      background: var(--panel);
+    }
+
+    .searchbox input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .hint {
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      background: rgba(200, 160, 61, .10);
+      color: var(--warn);
+      font-size: 13px;
+    }
+
+    .cards {
+      display: grid;
+      gap: 14px;
+      overflow: auto;
+      min-height: 0;
+      padding-right: 4px;
+    }
+
+    .card {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: start;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    .card:hover,
+    .card.active {
+      border-color: var(--accent);
+      background: var(--panel-2);
+    }
+
+    .icon {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: linear-gradient(180deg, var(--panel-3), var(--panel));
+      border: 1px solid var(--line);
+      font: 700 18px/1 var(--font-display);
+    }
+
+    .card h3 {
+      margin: 0 0 4px;
+      font: 600 21px/1.08 var(--font-display);
+      letter-spacing: -.03em;
+    }
+
+    .skill-id {
+      margin-bottom: 10px;
+      color: var(--muted);
+      font: 12px/1.45 var(--font-mono);
+    }
+
+    .card p {
+      margin: 0 0 12px;
+      color: var(--ink-2);
+      font-size: 14px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--chip);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .score {
+      color: var(--accent-2);
+      font: 600 28px/1 var(--font-display);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .detail-panel {
+      padding: 18px;
+      height: 100%;
+      overflow: auto;
+    }
+
+    .detail-kicker {
+      color: var(--accent-2);
+      font: 600 12px/1.2 var(--font-display);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .detail-panel h2 {
+      margin: 10px 0 6px;
+      font: 600 28px/1.06 var(--font-display);
+      letter-spacing: -.04em;
+    }
+
+    .detail-id {
+      margin-bottom: 12px;
+      color: var(--muted);
+      font: 12px/1.45 var(--font-mono);
+    }
+
+    .detail-panel p {
+      margin: 0;
+      color: var(--ink-2);
+      font-size: 15px;
+    }
+
+    .block {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .block h3 {
+      margin: 0 0 10px;
+      font: 600 13px/1.2 var(--font-display);
+      color: var(--ink);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .prompt {
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #0d1118;
+      color: #dce6ff;
+      font: 12px/1.7 var(--font-mono);
+      white-space: pre-wrap;
+    }
+
+    .copy {
+      width: 100%;
+      min-height: 42px;
+      margin-top: 12px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .copy:hover {
+      background: var(--accent-2);
+    }
+
+    .style-note {
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--ink-2);
+      font-size: 13px;
+    }
+
+    .style-note strong {
+      color: var(--ink);
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        height: auto;
+        overflow: auto;
+      }
+
+      .app {
+        grid-template-columns: 240px minmax(0, 1fr);
+        grid-template-rows: 72px minmax(0, 1fr);
+        height: auto;
+      }
+
+      .detail {
+        grid-column: 1 / -1;
+      }
+
+      .detail-panel,
+      .cards,
+      .scene-list {
+        overflow: visible;
+        height: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        display: block;
+      }
+
+      .topbar,
+      .sidebar,
+      .main,
+      .detail {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .toolbar,
+      .search-row,
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .seg {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+
+      .card {
+        grid-template-columns: 48px minmax(0, 1fr);
+      }
+
+      .score {
+        grid-column: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">A</div>
+        <div>
+          <h1>CD-Center</h1>
+          <p>通用能力调度台。左边按场景筛选，中间选择能力，右边复制调用提示。</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="seg" aria-label="运行环境切换">
+          <button class="active" data-env="all">全部能力</button>
+          <button data-env="local">本地</button>
+          <button data-env="remote">远程</button>
+        </div>
+        <div class="theme-toggle" aria-label="主题切换">
+          <button data-theme="dark">黑</button>
+          <button class="active" data-theme="light">白</button>
+        </div>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="panel" style="display:flex;flex-direction:column;min-height:0">
+        <div class="panel-title">场景</div>
+        <div class="scene-list" id="sceneList"></div>
+      </div>
+      <div class="panel storage">
+        <div class="panel-title" style="padding:0 0 12px">范围说明</div>
+        <p>`全部能力` 会展示本地、远程和共享能力。筛选只改变视图，不会触发任何执行。</p>
+        <div class="storage-grid">
+          <div class="storage-box"><strong>本地</strong><span>本机脚本或工具</span></div>
+          <div class="storage-box"><strong>远程</strong><span>API 或托管服务</span></div>
+          <div class="storage-box"><strong>共享</strong><span>两类环境均可用</span></div>
+          <div class="storage-box"><strong>只读</strong><span>选择能力不执行</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="search-row">
+        <label class="searchbox">
+          <span>⌕</span>
+          <input id="search" autocomplete="off" placeholder="搜索任务、能力或标识，例如：改 UI、网页调研、视频生成、代码审查" />
+        </label>
+        <div class="hint">这是调度视图，不保存密钥，也不直接调用外部工具。</div>
+      </div>
+      <div class="cards" id="cards"></div>
+    </main>
+
+    <aside class="detail">
+      <div class="panel detail-panel" id="detail"></div>
+    </aside>
+  </div>
+
+  <script>
+    const themes = {
+      dark: {
+        vars: {
+          "--bg":"#0b0d12","--bg-2":"#121621","--panel":"#121722","--panel-2":"#171d2a","--panel-3":"#20283a",
+          "--ink":"#eef2ff","--ink-2":"#d5ddf6","--muted":"#8f9bb8","--line":"#293244","--accent":"#7487ff","--accent-2":"#96a7ff","--chip":"#1a2130","--warn":"#c8a03d","--success":"#2bb673"
+        }
+      },
+      light: {
+        vars: {
+          "--bg":"#f4f6fb","--bg-2":"#edf1f8","--panel":"#ffffff","--panel-2":"#f8faff","--panel-3":"#eef3ff",
+          "--ink":"#121722","--ink-2":"#2b3240","--muted":"#687389","--line":"#d8dfec","--accent":"#5d6ff0","--accent-2":"#4a5de2","--chip":"#f0f4fc","--warn":"#9b6d05","--success":"#128250"
+        }
+      }
+    };
+
+    let capabilities = [];
+    let activeEnv = "all";
+    let activeScene = "全部";
+    let activeTheme = "light";
+    let selected = null;
+
+    const scenes = [
+      ["全部", () => true],
+      ["UI / 前端", item => item.cat === "UI / 前端"],
+      ["代码 / 后端", item => item.cat === "代码 / 后端"],
+      ["网页 / 自动化", item => item.cat === "网页 / 自动化"],
+      ["视频 / 内容", item => item.cat === "视频 / 内容"],
+      ["知识 / 记忆", item => item.cat === "知识 / 记忆"],
+      ["部署", item => item.cat === "部署"]
+    ];
+
+    const sceneList = document.getElementById("sceneList");
+    const cards = document.getElementById("cards");
+    const detail = document.getElementById("detail");
+    const search = document.getElementById("search");
+
+    function applyTheme(themeName) {
+      activeTheme = themeName;
+      document.documentElement.setAttribute("data-theme", themeName);
+      Object.entries(themes[themeName].vars).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
+      document.querySelectorAll(".theme-toggle button").forEach(btn => btn.classList.toggle("active", btn.dataset.theme === themeName));
+    }
+
+    async function loadRegistry() {
+      const response = await fetch("./capability-registry.public.json", { cache: "no-store" });
+      capabilities = await response.json();
+      selected = capabilities[0];
+      renderAll();
+    }
+
+    function filtered() {
+      const q = search.value.trim().toLowerCase();
+      return capabilities.filter(item => {
+	        const envOk = activeEnv === "all" || item.env.includes(activeEnv) || item.env.includes("shared");
+        const sceneOk = activeScene === "全部" || item.cat === activeScene;
+        const qOk = !q || [item.name, item.displayName, item.desc, item.cat, ...item.tags].join(" ").toLowerCase().includes(q);
+        return envOk && sceneOk && qOk;
+      });
+    }
+
+    function renderScenes() {
+      sceneList.innerHTML = scenes.map(([label, test]) => {
+        const count = capabilities.filter(item => {
+          const envOk = activeEnv === "all" || item.env.includes(activeEnv) || item.env.includes("shared");
+          return envOk && test(item);
+        }).length;
+        return `<button class="scene-btn ${label === activeScene ? "active" : ""}" data-scene="${label}"><span>${label}</span><span class="scene-count">${count}</span></button>`;
+      }).join("");
+      document.querySelectorAll(".scene-btn").forEach(btn => btn.addEventListener("click", () => {
+        activeScene = btn.dataset.scene;
+        const first = filtered()[0];
+        if (first) selected = first;
+        renderAll();
+      }));
+    }
+
+    function renderCards() {
+      const list = filtered();
+      cards.innerHTML = list.map(item => `
+        <article class="card ${selected && item.name === selected.name ? "active" : ""}" data-name="${item.name}">
+          <div class="icon">${item.icon}</div>
+          <div>
+            <h3>${item.displayName}</h3>
+            <div class="skill-id">${item.name}</div>
+            <p>${item.desc}</p>
+            <div class="tags">${item.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div>
+          </div>
+          <div class="score">${item.score}</div>
+        </article>
+      `).join("") || `<div class="panel" style="padding:18px;color:var(--muted)">没有匹配能力。换一个关键词或场景再试。</div>`;
+
+      document.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => {
+        selected = capabilities.find(item => item.name === card.dataset.name);
+        renderCards();
+        renderDetail();
+      }));
+    }
+
+    function renderDetail() {
+      if (!selected) {
+        detail.innerHTML = `<div class="detail-kicker">能力详情</div><h2>没有可用能力</h2>`;
+        return;
+      }
+      detail.innerHTML = `
+        <div class="detail-kicker">能力详情</div>
+        <h2>${selected.displayName}</h2>
+        <div class="detail-id">${selected.name}</div>
+        <p>${selected.desc}</p>
+        <div class="tags" style="margin-top:12px">${selected.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div>
+
+        <div class="block">
+          <h3>推荐调用提示</h3>
+          <div class="prompt">${selected.prompt}</div>
+          <button class="copy" id="copyPrompt">复制调用提示</button>
+        </div>
+
+        <div class="block">
+          <h3>当前主题</h3>
+          <div class="style-note"><strong>${activeTheme === "dark" ? "黑色主题" : "白色主题"}</strong>：这里只保留黑 / 白两套，不再让你选一堆风格层级。</div>
+        </div>
+      `;
+      document.getElementById("copyPrompt").addEventListener("click", async () => {
+        await navigator.clipboard.writeText(selected.prompt);
+        document.getElementById("copyPrompt").textContent = "已复制";
+        setTimeout(() => document.getElementById("copyPrompt").textContent = "复制调用提示", 1200);
+      });
+    }
+
+    function renderAll() {
+      renderScenes();
+      renderCards();
+      renderDetail();
+    }
+
+    document.querySelectorAll(".seg button").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll(".seg button").forEach(node => node.classList.remove("active"));
+      btn.classList.add("active");
+      activeEnv = btn.dataset.env;
+      const first = filtered()[0];
+      if (first) selected = first;
+      renderAll();
+    }));
+
+    document.querySelectorAll(".theme-toggle button").forEach(btn => btn.addEventListener("click", () => applyTheme(btn.dataset.theme)));
+
+    search.addEventListener("input", () => {
+      const first = filtered()[0];
+      if (first) selected = first;
+      renderCards();
+      renderDetail();
+    });
+
+    applyTheme("light");
+    loadRegistry();
+  </script>
+</body>
+</html>
