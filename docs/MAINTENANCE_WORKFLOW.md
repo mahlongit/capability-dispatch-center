@@ -1,16 +1,16 @@
 # Maintenance Workflow
 
-This document defines how to maintain CD-Center as a reusable local capability discovery skill without leaking private operational context.
+This document defines how to maintain CD-Center as a reusable open-source local capability discovery skill without leaking private operational context.
 
 ## Principles
 
-- Keep the example registry generic unless the repository is intentionally private for a specific team.
+- Keep the example registry generic and safe for public distribution.
 - Do not commit credentials, account names, cookies, tokens, private machine paths, internal logs, or private capability inventories.
 - Treat `capability-registry.public.json` as shipped example data.
 - Treat `capability-registry.local.json` as generated local runtime data and do not commit it.
 - Treat `index.html` as the local dispatch UI.
 - Validate before every commit.
-- Do not enable public hosting until the registry and documentation have been reviewed for disclosure risk.
+- Do not publish generated local inventory. Only publish clean example data and public-safe documentation.
 
 ## Common Changes
 
@@ -94,7 +94,7 @@ Before pushing a release or handoff commit:
 - Local registry remains uncommitted.
 - Category counts render correctly in the UI.
 - Security review has no unresolved private-context matches.
-- Repository visibility is private unless a separate public-release review has been completed.
+- Repository content is public-safe and does not include generated local inventory.
 - The commit message describes the change.
 - Rollback is possible through git history.
 

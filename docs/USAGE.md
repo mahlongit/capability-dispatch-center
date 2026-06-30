@@ -163,4 +163,4 @@ Every match must be reviewed. Documentation can mention security concepts, but t
 - Example registry remains generic.
 - `capability-registry.local.json` stays uncommitted.
 - No private context remains in committed files.
-- Repository visibility is private.
+- Public repository content remains generic and safe to share.

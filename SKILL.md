@@ -11,7 +11,7 @@ triggers:
   - discover local tools
 metadata:
   project:
-    type: proprietary-skill
+    type: open-source-skill
 ---
 
 # CD-Center

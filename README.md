@@ -2,13 +2,13 @@
 
 > A local capability discovery and dispatch skill for AI-assisted workflows.
 
-[![License: Proprietary](https://img.shields.io/badge/license-proprietary-red.svg)](#license)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Local Scan](https://img.shields.io/badge/local-skill%20discovery-blue.svg)](#what-it-does)
 [![Prompt + CLI + UI](https://img.shields.io/badge/usage-prompt%20cli%20ui-green.svg)](#quick-start)
 
 CD-Center is a complete local skill project, not just a static page. Its job is to scan a user's machine for installed skills, plugins, MCP servers, and agents, generate a local capability registry, and open a dispatch page before execution starts.
 
-It is private and proprietary. It is intended to help operators and AI tools route work using the capabilities already present on the user's machine.
+It is intended to help operators and AI tools route work using the capabilities already present on the user's machine.
 
 ## Product Preview
 
@@ -133,6 +133,7 @@ cd-center prompt
 - The scanner writes the local inventory to `capability-registry.local.json`, which is gitignored.
 - The local inventory may include machine-specific paths on the user's machine, but those must not be committed.
 - The page is local-first. It does not silently publish the local inventory anywhere.
+- The repository ships only clean example data and public documentation. Your own scanned inventory stays local unless you choose to share it.
 
 ## Documentation
 
@@ -148,4 +149,4 @@ CD-Center is a discovery and routing layer. It does not replace the execution to
 
 ## License
 
-This repository is private and proprietary. No open-source license is granted.
+MIT License.
