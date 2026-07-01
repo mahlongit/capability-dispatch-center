@@ -40,6 +40,19 @@ Common fields:
 2. Validate JSON.
 3. Confirm category counts still render in the UI.
 
+### Parent Capability Packages
+
+Some installs are not a single `SKILL.md` item. They are content-source packages containing many child agents, aliases, prompts, or templates. Examples include agent directories, design template libraries, and migrated alias packs.
+
+Maintenance rules:
+
+- Represent the package as one parent capability in the main list.
+- Put concrete children in `childItems` so the detail panel can show how to choose and use them.
+- Do not add every child as a top-level capability unless the host truly installed each child as an independent runtime skill.
+- Public manifests may include safe names such as `discoveryNames`, but must not include private machine paths.
+- Prompts should describe human usage: choose a child item, copy its prompt or follow the package README, then use the matching host tool.
+- Search must include child names and descriptions so queries for a child still return the parent package.
+
 ## Validation Commands
 
 From the project root:
