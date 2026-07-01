@@ -491,12 +491,6 @@
       white-space: nowrap;
     }
 
-    .score {
-      color: var(--accent);
-      font: 540 18px/1 var(--font-display);
-      font-variant-numeric: tabular-nums;
-    }
-
     .detail-panel {
       padding: 14px;
       height: 100%;
@@ -590,6 +584,35 @@
       font-size: 11px;
     }
 
+    .source-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .source-title-row .panel-title {
+      margin: 0;
+    }
+
+    .icon-button {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .icon-button:hover {
+      color: var(--ink);
+      border-color: var(--accent);
+    }
+
     .meta-list {
       display: grid;
       gap: 6px;
@@ -630,6 +653,38 @@
       color: var(--muted);
       font-size: 12px;
       word-break: break-word;
+    }
+
+    .source-entry strong {
+      color: var(--ink);
+    }
+
+    .source-entry .child-desc {
+      margin-top: 4px;
+      color: var(--ink-2);
+      line-height: 1.45;
+    }
+
+    .source-entry .child-meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font: 10.5px/1.35 var(--font-mono);
+    }
+
+    .children-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .children-toolbar button {
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 8px;
+      color: var(--ink);
+      font-weight: 650;
     }
 
     @media (max-width: 1180px) {
@@ -687,9 +742,6 @@
         grid-template-columns: 48px minmax(0, 1fr);
       }
 
-      .score {
-        grid-column: 2;
-      }
     }
 
     @media (max-width: 560px) {
@@ -798,7 +850,10 @@
           </div>
         </section>
         <section class="sidebar-section source-meta">
-          <div class="panel-title" id="sourceTitle">当前数据源</div>
+          <div class="source-title-row">
+            <div class="panel-title" id="sourceTitle">当前数据源</div>
+            <button class="icon-button" id="refreshRegistry" title="刷新本机能力" aria-label="刷新本机能力">↻</button>
+          </div>
           <p id="registryStatus">启动中，正在检查本机扫描结果。</p>
           <div class="meta-list">
             <div class="meta-item"><strong id="registryModeLabel">数据模式</strong><span id="registryMode">自动检测</span></div>
@@ -861,6 +916,7 @@
     let activeLang = "zh";
     let sortBy = "recent";
     let sortDirection = "desc";
+    const expandedChildren = new Set();
     let selected = null;
 
     const sceneKeys = ["全部", "UI / 前端", "代码 / 后端", "网页 / 自动化", "视频 / 内容", "知识 / 记忆", "部署", "原生自带", "后装能力", "知识参考"];
@@ -888,6 +944,11 @@
         registryModeLabel: "数据模式",
         registryCountLabel: "能力数量",
         registryTimeLabel: "扫描时间",
+        refreshLabel: "刷新本机能力",
+        refreshing: "正在刷新本机能力...",
+        refreshLocalOnly: "静态页面不能直接扫描本机。请在本地运行 `python3 scripts/serve.py` 后点击刷新，或手动运行 `python3 scripts/scan_capabilities.py`。",
+        refreshFailed: "刷新失败：请确认正在通过 `python3 scripts/serve.py` 打开本地页面。",
+        refreshDone: "刷新完成，已重新加载本机能力。",
         searchPlaceholder: "搜索任务、能力或标识，例如：改 UI、网页调研、视频生成、代码审查",
         hintLocal: "",
         hintExample: "",
@@ -913,6 +974,10 @@
         themeZhLight: "白色主题",
         themeNote: "这里只保留黑 / 白两套，不再让你选一堆风格层级。",
         subskillNote: "建议：这是父级能力或工具箱。执行前先判断是否要继续细分到子 skill / 子规则 / 子代理。",
+        childItems: "子项",
+        showChildren: "展开子项",
+        hideChildren: "收起子项",
+        moreItems: "更多子项",
         sceneLabels: {
           "全部": "全部",
           "UI / 前端": "UI / 前端",
@@ -948,6 +1013,11 @@
         registryModeLabel: "Mode",
         registryCountLabel: "Count",
         registryTimeLabel: "Scanned At",
+        refreshLabel: "Refresh local capabilities",
+        refreshing: "Refreshing local capabilities...",
+        refreshLocalOnly: "Static pages cannot scan this computer directly. Open the local page with `python3 scripts/serve.py`, then refresh, or run `python3 scripts/scan_capabilities.py` manually.",
+        refreshFailed: "Refresh failed. Confirm the page is served by `python3 scripts/serve.py`.",
+        refreshDone: "Refresh complete. Local capabilities reloaded.",
         searchPlaceholder: "Search task, capability, or id. Example: UI polish, web research, video generation, code review",
         hintLocal: "",
         hintExample: "",
@@ -973,6 +1043,10 @@
         themeZhLight: "Light theme",
         themeNote: "Only two themes are kept here. No extra theme layers.",
         subskillNote: "Suggestion: this looks like a parent capability or toolkit. Check whether you should route further into child skills, rules, or sub-agents first.",
+        childItems: "Child Items",
+        showChildren: "Show children",
+        hideChildren: "Hide children",
+        moreItems: "more items",
         sceneLabels: {
           "全部": "All",
           "UI / 前端": "UI / Frontend",
@@ -998,6 +1072,7 @@
     const registryTime = document.getElementById("registryTime");
     const hintText = document.getElementById("hintText");
     const sortDirectionButton = document.getElementById("sortDirection");
+    const refreshRegistryButton = document.getElementById("refreshRegistry");
 
     function t(key) {
       return translations[activeLang][key];
@@ -1025,6 +1100,45 @@
 
     function markUsed(item) {
       window.localStorage.setItem(usageStorageKey(item), String(Date.now()));
+    }
+
+    function lastUsedTime(item) {
+      const own = getLastUsed(item);
+      const childTimes = Array.isArray(item.childItems) ? item.childItems.map(child => getLastUsed(child)) : [];
+      return Math.max(own, ...childTimes, 0);
+    }
+
+    function installedTime(item) {
+      const own = Date.parse(item.installedAt || 0) || 0;
+      const childTimes = Array.isArray(item.childItems) ? item.childItems.map(child => Date.parse(child.installedAt || 0) || 0) : [];
+      return Math.max(own, ...childTimes, 0);
+    }
+
+    function childMeta(child) {
+      return listUnique([child.cat || "", child.folder || "", child.host || "", child.sourceType || ""]).join(" · ");
+    }
+
+    function childRows(item) {
+      if (!Array.isArray(item.childItems) || !item.childItems.length) return "";
+      const expanded = expandedChildren.has(item.name);
+      const visibleChildren = expanded ? item.childItems : item.childItems.slice(0, 8);
+      const remaining = item.childItems.length - visibleChildren.length;
+      return `
+        <div class="source-list">
+          <div class="children-toolbar">
+            <strong>${t("childItems")} · ${item.childItems.length}</strong>
+            <button id="toggleChildren">${expanded ? t("hideChildren") : t("showChildren")}</button>
+          </div>
+          ${visibleChildren.map(child => `
+            <div class="source-entry">
+              <strong>${capabilityName(child)}</strong> · ${child.name}
+              ${child.desc ? `<div class="child-desc">${child.desc}</div>` : ""}
+              ${childMeta(child) ? `<div class="child-meta">${childMeta(child)}</div>` : ""}
+            </div>
+          `).join("")}
+          ${remaining > 0 ? `<div class="source-entry">+ ${remaining} ${t("moreItems")}</div>` : ""}
+        </div>
+      `;
     }
 
     function applyTheme(themeName) {
@@ -1056,6 +1170,8 @@
       document.getElementById("registryModeLabel").textContent = t("registryModeLabel");
       document.getElementById("registryCountLabel").textContent = t("registryCountLabel");
       document.getElementById("registryTimeLabel").textContent = t("registryTimeLabel");
+      refreshRegistryButton.title = t("refreshLabel");
+      refreshRegistryButton.setAttribute("aria-label", t("refreshLabel"));
       search.placeholder = t("searchPlaceholder");
       document.getElementById("sortLabel").textContent = t("sortLabel");
       document.getElementById("sortRecent").textContent = t("sortRecent");
@@ -1131,6 +1247,28 @@
       selected = capabilities[0] || null;
       updateRegistryMeta();
       renderAll();
+    }
+
+    async function refreshLocalRegistry() {
+      const previousText = registryStatus.textContent;
+      registryStatus.textContent = t("refreshing");
+      refreshRegistryButton.disabled = true;
+      try {
+        const response = await fetch("./api/refresh-scan", { method: "POST", cache: "no-store" });
+        if (!response.ok) throw new Error(String(response.status));
+        await response.json();
+        await loadRegistry();
+        registryStatus.textContent = t("refreshDone");
+      } catch (_error) {
+        registryStatus.textContent = window.location.protocol === "file:" || window.location.hostname.includes("pages.dev")
+          ? t("refreshLocalOnly")
+          : t("refreshFailed");
+        setTimeout(() => {
+          if (registryStatus.textContent !== previousText) updateRegistryMeta();
+        }, 5000);
+      } finally {
+        refreshRegistryButton.disabled = false;
+      }
     }
 
     function normalizeSceneLabel(item) {
@@ -1369,17 +1507,17 @@
           return capabilityName(a).localeCompare(capabilityName(b), activeLang === "en" ? "en" : "zh") * direction;
         }
         if (sortBy === "installed") {
-          const aTime = Date.parse(a.installedAt || 0) || 0;
-          const bTime = Date.parse(b.installedAt || 0) || 0;
+          const aTime = installedTime(a);
+          const bTime = installedTime(b);
           return (aTime - bTime) * direction;
         }
-        const aUsed = getLastUsed(a);
-        const bUsed = getLastUsed(b);
+        const aUsed = lastUsedTime(a);
+        const bUsed = lastUsedTime(b);
         if (aUsed !== bUsed) {
           return (aUsed - bUsed) * direction;
         }
-        const aInstalled = Date.parse(a.installedAt || 0) || 0;
-        const bInstalled = Date.parse(b.installedAt || 0) || 0;
+        const aInstalled = installedTime(a);
+        const bInstalled = installedTime(b);
         return (aInstalled - bInstalled) * direction;
       });
     }
@@ -1413,12 +1551,12 @@
             <p>${capabilityDesc(item)}</p>
             <div class="tags">${cardTags.map(tag => `<span class="tag">${tag}</span>`).join("")}${item.sourceCount > 1 ? `<span class="tag">${item.sourceCount} sources</span>` : ""}${Number(item.childCount || 0) > 0 ? `<span class="tag">${item.childCount} items</span>` : ""}${Array.isArray(item.templateItems) && item.templateItems.length ? `<span class="tag">${item.templateItems.length} templates</span>` : ""}</div>
           </div>
-          <div class="score">${item.score}</div>
         </article>
       `}).join("") || `<div class="panel" style="padding:18px;color:var(--muted)">${t("noMatch")}</div>`;
 
       document.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => {
         selected = filtered().find(item => item.name === card.dataset.name);
+        if (selected) markUsed(selected);
         renderCards();
         renderDetail();
       }));
@@ -1443,7 +1581,7 @@
           ${Array.isArray(selected.availableIn) && selected.availableIn.length > 1 ? `<div class="source-list"><div class="source-entry"><strong>${t("sourceHosts")}</strong><br>${selected.availableIn.join(", ")}</div></div>` : ""}
           ${Array.isArray(selected.localDocDisplays) && selected.localDocDisplays.length ? `<div class="source-list"><div class="source-entry"><strong>${activeLang === "en" ? "Local docs read" : "已读取本地说明"}</strong><br>${selected.localDocDisplays.slice(0, 8).join("<br>")}${selected.localDocDisplays.length > 8 ? `<br>+ ${selected.localDocDisplays.length - 8} more docs` : ""}</div></div>` : ""}
           ${(selected.categorySource || selected.descSource) ? `<div class="source-list"><div class="source-entry"><strong>${activeLang === "en" ? "Evidence" : "判断依据"}</strong><br>category: ${selected.categorySource || "-"}<br>description: ${selected.descSource || "-"}</div></div>` : ""}
-          ${Array.isArray(selected.childItems) && selected.childItems.length ? `<div class="source-list">${selected.childItems.slice(0, 80).map(child => `<div class="source-entry"><strong>${capabilityName(child)}</strong> · ${child.name}${child.cat ? ` · ${child.cat}` : ""}<br>${child.desc || ""}<br>${child.sourcePathDisplay || child.sourcePath || child.host || ""}</div>`).join("")}${selected.childItems.length > 80 ? `<div class="source-entry">+ ${selected.childItems.length - 80} more items</div>` : ""}</div>` : ""}
+          ${childRows(selected)}
         </div>
         ` : ""}
 
@@ -1480,6 +1618,14 @@
         renderCards();
         renderDetail();
       });
+      const toggleChildren = document.getElementById("toggleChildren");
+      if (toggleChildren) {
+        toggleChildren.addEventListener("click", () => {
+          if (expandedChildren.has(selected.name)) expandedChildren.delete(selected.name);
+          else expandedChildren.add(selected.name);
+          renderDetail();
+        });
+      }
     }
 
     function renderAll() {
@@ -1505,6 +1651,8 @@
       activeLang = btn.dataset.lang;
       renderAll();
     }));
+
+    refreshRegistryButton.addEventListener("click", refreshLocalRegistry);
 
     document.querySelectorAll(".sort-buttons button").forEach(btn => btn.addEventListener("click", () => {
       document.querySelectorAll(".sort-buttons button").forEach(node => node.classList.remove("active"));

@@ -338,6 +338,13 @@ def score_for(source_type: str) -> str:
     }.get(source_type, "8.0")
 
 
+def file_timestamp(path: Path) -> str:
+    stat = path.stat()
+    created = getattr(stat, "st_birthtime", None)
+    timestamp = created if created else stat.st_mtime
+    return datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()
+
+
 def english_title(value: str) -> str:
     return slug_to_title(value)
 
@@ -795,7 +802,6 @@ def scan_content_sources(home: Path, overrides: dict[str, object]) -> Iterable[d
             "cat": category,
             "env": ["shared"],
             "icon": icon_for(display_name),
-            "score": score_for("content-source"),
             "desc": desc_zh if child_count == 0 else f"{desc_zh} 已索引 {child_count} 个子项，右侧可查看子 agent / alias / 模板。",
             "descEn": desc_en if child_count == 0 else f"{desc_en} Indexed {child_count} child items; inspect the detail panel for agents, aliases, or templates.",
             "tags": list(dict.fromkeys(["content-source", "parent", name, *scene_tags[:8]])),
@@ -856,7 +862,7 @@ def build_capability(
     else:
         description = raw_description or default_en
         desc_source = "default"
-    description_zh = description if description and re.search(r"[\u4e00-\u9fff]", description) else default_zh
+    description_zh = description or default_zh
     description_en = description if description and not re.search(r"[\u4e00-\u9fff]", description) else default_en
     category, category_source = classify_category(
         " ".join([raw_name, display_name, description, source_type, metadata_text(metadata), doc_text[:2000]]),
@@ -883,7 +889,7 @@ def build_capability(
     source_display = source_path_str.replace(str(Path.home()), "~")
     needs_subskills = infer_requires_subskills(raw_name, description)
     prompt_zh, prompt_en = build_prompts(display_name, description_zh, description_en, host, source_type, needs_subskills)
-    installed_at = datetime.fromtimestamp(source_path.stat().st_mtime, tz=timezone.utc).isoformat()
+    installed_at = file_timestamp(source_path)
     available_in = [host]
     if host == "agents" and source_type == "skill":
         available_in = ["codex", "hermes", "agents"]
@@ -899,7 +905,6 @@ def build_capability(
         "cat": category,
         "env": env,
         "icon": icon_for(display_name),
-        "score": score_for(source_type),
         "desc": description_zh,
         "descEn": description_en,
         "tags": tags,
@@ -1084,7 +1089,6 @@ def reference_capability(
         "cat": category,
         "env": ["shared"],
         "icon": icon_for(display_name),
-        "score": score_for("reference"),
         "desc": description_zh,
         "descEn": description_en,
         "tags": list(dict.fromkeys(["reference", "knowledge", *scene_tags[:8]])),

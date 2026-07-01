@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import http.server
+import json
 import os
 import socket
 import socketserver
@@ -57,6 +58,33 @@ def run_scan(repo_root: Path, output: Path) -> None:
     )
 
 
+def make_handler(repo_root: Path, output: Path):
+    class CDCHandler(http.server.SimpleHTTPRequestHandler):
+        def do_POST(self) -> None:
+            if self.path.split("?", 1)[0] != "/api/refresh-scan":
+                self.send_error(404)
+                return
+            try:
+                run_scan(repo_root, output)
+                payload = {"ok": True, "output": str(output)}
+                body = json.dumps(payload).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except subprocess.CalledProcessError as error:
+                payload = {"ok": False, "error": str(error)}
+                body = json.dumps(payload).encode("utf-8")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+    return CDCHandler
+
+
 def main() -> int:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[1]
@@ -68,7 +96,7 @@ def main() -> int:
     port = find_free_port(args.host, args.port)
     url = f"http://{args.host}:{port}/"
 
-    handler = http.server.SimpleHTTPRequestHandler
+    handler = make_handler(repo_root, args.scan_output)
     with socketserver.TCPServer((args.host, port), handler) as server:
         print(f"CD-Center running at {url}")
         print("Use Ctrl+C to stop.")
