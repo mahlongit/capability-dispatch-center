@@ -613,6 +613,10 @@
       border-color: var(--accent);
     }
 
+    .icon-button[hidden] {
+      display: none;
+    }
+
     .meta-list {
       display: grid;
       gap: 6px;
@@ -852,7 +856,7 @@
         <section class="sidebar-section source-meta">
           <div class="source-title-row">
             <div class="panel-title" id="sourceTitle">当前数据源</div>
-            <button class="icon-button" id="refreshRegistry" title="刷新本机能力" aria-label="刷新本机能力">↻</button>
+            <button class="icon-button" id="refreshRegistry" title="刷新本机能力" aria-label="刷新本机能力" hidden>↻</button>
           </div>
           <p id="registryStatus">启动中，正在检查本机扫描结果。</p>
           <div class="meta-list">
@@ -916,6 +920,7 @@
     let activeLang = "zh";
     let sortBy = "recent";
     let sortDirection = "desc";
+    let localRefreshAvailable = false;
     const expandedChildren = new Set();
     let selected = null;
 
@@ -945,8 +950,9 @@
         registryCountLabel: "能力数量",
         registryTimeLabel: "扫描时间",
         refreshLabel: "刷新本机能力",
+        refreshUnavailable: "当前是静态页面，不提供本机扫描按钮。要刷新本机能力，请在本地运行 `python3 scripts/serve.py` 后打开本地页面。",
         refreshing: "正在刷新本机能力...",
-        refreshLocalOnly: "静态页面不能直接扫描本机。请在本地运行 `python3 scripts/serve.py` 后点击刷新，或手动运行 `python3 scripts/scan_capabilities.py`。",
+        refreshLocalOnly: "当前页面没有本机刷新接口。请在本地运行 `python3 scripts/serve.py`，或手动运行 `python3 scripts/scan_capabilities.py`。",
         refreshFailed: "刷新失败：请确认正在通过 `python3 scripts/serve.py` 打开本地页面。",
         refreshDone: "刷新完成，已重新加载本机能力。",
         searchPlaceholder: "搜索任务、能力或标识，例如：改 UI、网页调研、视频生成、代码审查",
@@ -1014,8 +1020,9 @@
         registryCountLabel: "Count",
         registryTimeLabel: "Scanned At",
         refreshLabel: "Refresh local capabilities",
+        refreshUnavailable: "This is a static page, so no local scan button is exposed. Run `python3 scripts/serve.py` locally to refresh local capabilities from the page.",
         refreshing: "Refreshing local capabilities...",
-        refreshLocalOnly: "Static pages cannot scan this computer directly. Open the local page with `python3 scripts/serve.py`, then refresh, or run `python3 scripts/scan_capabilities.py` manually.",
+        refreshLocalOnly: "No local refresh API is available on this page. Run `python3 scripts/serve.py` locally, or run `python3 scripts/scan_capabilities.py` manually.",
         refreshFailed: "Refresh failed. Confirm the page is served by `python3 scripts/serve.py`.",
         refreshDone: "Refresh complete. Local capabilities reloaded.",
         searchPlaceholder: "Search task, capability, or id. Example: UI polish, web research, video generation, code review",
@@ -1170,8 +1177,7 @@
       document.getElementById("registryModeLabel").textContent = t("registryModeLabel");
       document.getElementById("registryCountLabel").textContent = t("registryCountLabel");
       document.getElementById("registryTimeLabel").textContent = t("registryTimeLabel");
-      refreshRegistryButton.title = t("refreshLabel");
-      refreshRegistryButton.setAttribute("aria-label", t("refreshLabel"));
+      configureRefreshControl();
       search.placeholder = t("searchPlaceholder");
       document.getElementById("sortLabel").textContent = t("sortLabel");
       document.getElementById("sortRecent").textContent = t("sortRecent");
@@ -1212,6 +1218,9 @@
       hintText.textContent = registrySource === "local"
         ? t("hintLocal")
         : t("hintExample");
+      if (!localRefreshAvailable) {
+        registryStatus.textContent = `${registryStatus.textContent} ${t("refreshUnavailable")}`;
+      }
     }
 
     async function fetchRegistry(url, sourceLabel) {
@@ -1250,6 +1259,10 @@
     }
 
     async function refreshLocalRegistry() {
+      if (!localRefreshAvailable) {
+        registryStatus.textContent = t("refreshUnavailable");
+        return;
+      }
       const previousText = registryStatus.textContent;
       registryStatus.textContent = t("refreshing");
       refreshRegistryButton.disabled = true;
@@ -1269,6 +1282,28 @@
       } finally {
         refreshRegistryButton.disabled = false;
       }
+    }
+
+    function configureRefreshControl() {
+      refreshRegistryButton.hidden = !localRefreshAvailable;
+      refreshRegistryButton.disabled = !localRefreshAvailable;
+      refreshRegistryButton.title = localRefreshAvailable ? t("refreshLabel") : t("refreshUnavailable");
+      refreshRegistryButton.setAttribute("aria-label", refreshRegistryButton.title);
+    }
+
+    async function detectLocalRefresh() {
+      if (window.location.protocol === "file:" || window.location.hostname.includes("pages.dev")) {
+        localRefreshAvailable = false;
+        configureRefreshControl();
+        return;
+      }
+      try {
+        const response = await fetch("./api/refresh-scan", { method: "OPTIONS", cache: "no-store" });
+        localRefreshAvailable = response.ok;
+      } catch (_error) {
+        localRefreshAvailable = false;
+      }
+      configureRefreshControl();
     }
 
     function normalizeSceneLabel(item) {
@@ -1683,7 +1718,11 @@
 
     sortDirectionButton.textContent = "↓";
     applyTheme("light");
-    loadRegistry();
+    detectLocalRefresh()
+      .finally(() => loadRegistry())
+      .catch(error => {
+        registryStatus.textContent = `Registry load failed: ${error.message}`;
+      });
   </script>
 </body>
 </html>

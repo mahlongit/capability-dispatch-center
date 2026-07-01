@@ -60,6 +60,14 @@ def run_scan(repo_root: Path, output: Path) -> None:
 
 def make_handler(repo_root: Path, output: Path):
     class CDCHandler(http.server.SimpleHTTPRequestHandler):
+        def do_OPTIONS(self) -> None:
+            if self.path.split("?", 1)[0] != "/api/refresh-scan":
+                self.send_error(404)
+                return
+            self.send_response(204)
+            self.send_header("Allow", "OPTIONS, POST")
+            self.end_headers()
+
         def do_POST(self) -> None:
             if self.path.split("?", 1)[0] != "/api/refresh-scan":
                 self.send_error(404)
