@@ -62,7 +62,9 @@
         radial-gradient(circle at top left, rgba(201, 180, 250, .18), transparent 24%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
       color: var(--ink);
-      font: 13px/1.5 var(--font-body);
+      font: 12px/1.42 var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
     }
 
     button,
@@ -80,7 +82,7 @@
     .app {
       display: grid;
       grid-template-columns: 264px minmax(0, 1fr) 360px;
-      grid-template-rows: 68px minmax(0, 1fr);
+      grid-template-rows: 64px minmax(0, 1fr);
       height: 100vh;
       overflow: hidden;
     }
@@ -91,7 +93,7 @@
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 16px;
       align-items: center;
-      padding: 0 24px;
+      padding: 0 20px;
       border-bottom: 1px solid var(--line);
       background:
         linear-gradient(135deg, rgba(27, 25, 56, .98), rgba(47, 44, 90, .92)),
@@ -112,28 +114,28 @@
     }
 
     .mark {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       display: grid;
       place-items: center;
       border-radius: 10px;
       background: linear-gradient(180deg, rgba(201, 180, 250, .94), rgba(106, 118, 255, .85));
       border: 1px solid rgba(255,255,255,.14);
       color: #fff;
-      font: 700 18px/1 var(--font-display);
+      font: 700 16px/1 var(--font-display);
     }
 
     .brand h1 {
       margin: 0;
       color: #fff;
-      font: 540 22px/1.02 var(--font-display);
+      font: 540 20px/1 var(--font-display);
       letter-spacing: -0.02em;
     }
 
     .brand p {
       margin: 3px 0 0;
       color: rgba(255,255,255,.74);
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .toolbar {
@@ -173,7 +175,7 @@
     .seg button,
     .theme-toggle button,
     .lang-toggle button {
-      min-height: 38px;
+      min-height: 34px;
       border: 0;
       border-radius: 8px;
       background: transparent;
@@ -200,14 +202,14 @@
     .detail {
       min-width: 0;
       min-height: 0;
-      padding: 14px;
+      padding: 12px;
     }
 
     .sidebar {
       padding-left: 24px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       overflow: auto;
     }
 
@@ -232,7 +234,7 @@
     }
 
     .panel-title {
-      padding: 12px 14px 0;
+      padding: 10px 12px 0;
       color: var(--muted);
       font: 600 12px/1.2 var(--font-display);
       letter-spacing: .05em;
@@ -254,8 +256,8 @@
       justify-content: space-between;
       gap: 10px;
       width: 100%;
-      min-height: 30px;
-      padding: 6px 10px;
+      min-height: 28px;
+      padding: 5px 10px;
       border: 0;
       border-radius: 8px;
       background: transparent;
@@ -270,18 +272,18 @@
 
     .scene-count {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       font-variant-numeric: tabular-nums;
     }
 
     .storage {
-      padding: 10px;
+      padding: 8px;
     }
 
     .storage p {
-      margin: 0 0 10px;
+      margin: 0 0 8px;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 11px;
     }
 
     .storage-grid {
@@ -312,8 +314,8 @@
 
     .search-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 300px;
-      gap: 12px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
       flex: none;
     }
 
@@ -329,7 +331,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      min-height: 52px;
+      min-height: 44px;
       padding: 0 14px;
       border-radius: var(--radius-md);
       border: 1px solid var(--line);
@@ -351,7 +353,7 @@
 
     .sort-buttons button,
     .sort-direction {
-      min-height: 34px;
+      min-height: 30px;
       padding: 0 12px;
       border-radius: 999px;
       background: var(--panel-2);
@@ -369,7 +371,7 @@
 
     .searchbox,
     .hint {
-      min-height: 52px;
+      min-height: 44px;
       border-radius: var(--radius-md);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
@@ -392,7 +394,7 @@
     }
 
     .hint {
-      display: flex;
+      display: none;
       align-items: center;
       padding: 0 14px;
       background: rgba(200, 160, 61, .10);
@@ -402,7 +404,7 @@
 
     .cards {
       display: grid;
-      gap: 14px;
+      gap: 10px;
       overflow: auto;
       min-height: 0;
       padding-right: 4px;
@@ -410,10 +412,10 @@
 
     .card {
       display: grid;
-      grid-template-columns: 58px minmax(0, 1fr) auto;
-      gap: 14px;
+      grid-template-columns: 50px minmax(0, 1fr) auto;
+      gap: 12px;
       align-items: start;
-      padding: 18px;
+      padding: 14px;
       border-radius: 12px;
       border: 1px solid var(--line);
       background: var(--panel);
@@ -428,32 +430,32 @@
     }
 
     .icon {
-      width: 58px;
-      height: 58px;
+      width: 50px;
+      height: 50px;
       display: grid;
       place-items: center;
       border-radius: 10px;
       background: linear-gradient(180deg, rgba(201, 180, 250, .34), rgba(255,255,255,1));
       border: 1px solid var(--line);
-      font: 700 16px/1 var(--font-display);
+      font: 700 14px/1 var(--font-display);
     }
 
     .card h3 {
       margin: 0 0 4px;
-      font: 540 18px/1.08 var(--font-display);
+      font: 540 16px/1.12 var(--font-display);
       letter-spacing: -0.02em;
     }
 
     .skill-id {
       margin-bottom: 10px;
       color: var(--muted);
-      font: 12px/1.45 var(--font-mono);
+      font: 11px/1.35 var(--font-mono);
     }
 
     .card p {
       margin: 0 0 12px;
       color: var(--ink-2);
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .tags {
@@ -463,22 +465,22 @@
     }
 
     .tag {
-      padding: 5px 10px;
+      padding: 4px 8px;
       border-radius: 999px;
       background: var(--chip);
       border: 1px solid var(--line);
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .score {
       color: var(--accent);
-      font: 540 22px/1 var(--font-display);
+      font: 540 18px/1 var(--font-display);
       font-variant-numeric: tabular-nums;
     }
 
     .detail-panel {
-      padding: 18px;
+      padding: 14px;
       height: 100%;
       overflow: auto;
     }
@@ -492,7 +494,7 @@
 
     .detail-panel h2 {
       margin: 10px 0 6px;
-      font: 540 24px/1.05 var(--font-display);
+      font: 540 20px/1.08 var(--font-display);
       letter-spacing: -0.02em;
     }
 
@@ -505,18 +507,18 @@
     .detail-panel p {
       margin: 0;
       color: var(--ink-2);
-      font-size: 15px;
+      font-size: 13px;
     }
 
     .block {
-      margin-top: 18px;
-      padding-top: 18px;
+      margin-top: 14px;
+      padding-top: 14px;
       border-top: 1px solid var(--line);
     }
 
     .block h3 {
       margin: 0 0 10px;
-      font: 600 13px/1.2 var(--font-display);
+      font: 600 12px/1.2 var(--font-display);
       color: var(--ink);
       letter-spacing: .05em;
       text-transform: uppercase;
@@ -553,7 +555,7 @@
       background: var(--panel-2);
       border: 1px solid var(--line);
       color: var(--ink-2);
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .style-note strong {
@@ -561,13 +563,13 @@
     }
 
     .source-meta {
-      padding: 14px;
+      padding: 10px;
     }
 
     .source-meta p {
       margin: 0 0 8px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .meta-list {
@@ -576,7 +578,7 @@
     }
 
     .meta-item {
-      padding: 8px 10px;
+      padding: 7px 9px;
       border-radius: 8px;
       border: 1px solid var(--line);
       background: var(--panel-2);
@@ -585,13 +587,13 @@
     .meta-item strong {
       display: block;
       color: var(--ink);
-      font-size: 12px;
+      font-size: 11px;
       margin-bottom: 2px;
     }
 
     .meta-item span {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10px;
       word-break: break-word;
       line-height: 1.45;
     }
@@ -793,7 +795,7 @@
           <span>⌕</span>
           <input id="search" autocomplete="off" placeholder="搜索任务、能力或标识，例如：改 UI、网页调研、视频生成、代码审查" />
         </label>
-        <div class="hint" id="hintText">默认优先加载 `capability-registry.local.json`，找不到时再回退到示例库。</div>
+        <div class="hint" id="hintText"></div>
       </div>
       <div class="controls-row">
         <div class="sort-panel">
@@ -867,8 +869,8 @@
         registryCountLabel: "能力数量",
         registryTimeLabel: "扫描时间",
         searchPlaceholder: "搜索任务、能力或标识，例如：改 UI、网页调研、视频生成、代码审查",
-        hintLocal: "当前页面来自本机扫描结果。重新扫描后刷新页面即可更新。",
-        hintExample: "当前页面来自示例库。运行 `python3 scripts/scan_capabilities.py` 或 `cd-center scan` 后刷新即可切到本机结果。",
+        hintLocal: "",
+        hintExample: "",
         statusLocal: "已加载本机扫描结果。打开页面前应先运行扫描。",
         statusExample: "未发现本机扫描结果，当前展示仓库自带示例库。",
         modeLocal: "本机扫描结果",
@@ -924,8 +926,8 @@
         registryCountLabel: "Count",
         registryTimeLabel: "Scanned At",
         searchPlaceholder: "Search task, capability, or id. Example: UI polish, web research, video generation, code review",
-        hintLocal: "This page is using the local scanned registry. Rescan and refresh to update it.",
-        hintExample: "This page is using the example registry. Run `python3 scripts/scan_capabilities.py` or `cd-center scan`, then refresh to load local results.",
+        hintLocal: "",
+        hintExample: "",
         statusLocal: "Loaded from the local scanned registry. Scan before using the page.",
         statusExample: "No local scan result was found. The page is showing the repository example registry.",
         modeLocal: "Local scan result",
@@ -1126,15 +1128,101 @@
       return availableHosts(item).includes(activeEnv);
     }
 
+    function parentBucket(item) {
+      const sourcePath = String(item.sourcePathDisplay || item.sourcePath || "");
+      if (item.sourceType === "skill" && availableHosts(item).includes("agents")) {
+        return `generic-skills:${normalizeSceneLabel(item)}`;
+      }
+      if (item.sourceType === "agent") {
+        return `${item.host || "agent"}:agents`;
+      }
+      if (item.sourceType === "mcp") {
+        return "local-config:mcp";
+      }
+      if (item.sourceType === "plugin") {
+        return `${item.host || "plugin"}:plugins`;
+      }
+      const hermesMatch = sourcePath.match(/^~\/\.hermes\/skills\/([^/]+)\/[^/]+\/SKILL\.md$/);
+      if (hermesMatch && !["openclaw-imports"].includes(hermesMatch[1])) {
+        return `hermes-group:${hermesMatch[1]}`;
+      }
+      if (sourcePath.includes("/openclaw-imports/")) {
+        return "hermes-group:openclaw-imports";
+      }
+      return "";
+    }
+
+    function aggregateParentItems(items) {
+      const grouped = new Map();
+      const passthrough = [];
+      for (const item of items) {
+        const bucket = parentBucket(item);
+        if (!bucket) {
+          passthrough.push(item);
+          continue;
+        }
+        if (!grouped.has(bucket)) {
+          const label = bucket.startsWith("generic-skills:")
+            ? `${bucket.split(":").pop()} · 通用 Skills`
+            : bucket.includes(":agents")
+            ? `${item.host === "github-copilot" ? "GitHub Copilot" : capabilityName(item)} Agents`
+            : bucket === "local-config:mcp"
+              ? "MCP Servers"
+              : bucket.endsWith(":plugins")
+                ? "Codex Plugins"
+                : `${slugToTitle(bucket.split(":").pop() || "parent")} Skills`;
+          grouped.set(bucket, {
+            ...item,
+            name: bucket,
+            displayName: label,
+            displayNameEn: label,
+            icon: iconText(label),
+            desc: `父级能力组，已折叠 ${1} 个子项。搜索子项名称时仍会命中这个父级组。`,
+            descEn: `Parent capability group with ${1} folded child item. Searching child names still returns this parent group.`,
+            tags: ["parent", item.host || "local", item.sourceType || "capability"],
+            sourceCount: 1,
+            childItems: [item],
+            requiresSubskills: true,
+          });
+          continue;
+        }
+        const parent = grouped.get(bucket);
+        parent.sourceCount += 1;
+        parent.childItems.push(item);
+        parent.availableIn = listUnique([...(parent.availableIn || []), ...availableHosts(item)]);
+        parent.tags = listUnique([...parent.tags, item.host || "", item.sourceType || ""]).filter(Boolean);
+        parent.installedAt = String(item.installedAt || "") > String(parent.installedAt || "") ? item.installedAt : parent.installedAt;
+        parent.desc = `父级能力组，已折叠 ${parent.sourceCount} 个子项。搜索子项名称时仍会命中这个父级组。`;
+        parent.descEn = `Parent capability group with ${parent.sourceCount} folded child items. Searching child names still returns this parent group.`;
+      }
+      return [...passthrough, ...grouped.values()];
+    }
+
+    function slugToTitle(value) {
+      return String(value || "")
+        .replace(/[-_./]+/g, " ")
+        .trim()
+        .replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    function iconText(name) {
+      return (String(name || "CAP").toUpperCase().match(/[A-Z0-9]/g) || ["C", "A", "P"]).slice(0, 3).join("");
+    }
+
+    function listUnique(values) {
+      return [...new Set(values.filter(Boolean))];
+    }
+
     function filtered() {
       const q = search.value.trim().toLowerCase();
-      const list = capabilities.filter(item => {
+      const rawList = capabilities.filter(item => {
         const normalizedCategory = normalizeSceneLabel(item);
         const envOk = hostOk(item);
         const sceneOk = activeScene === "全部" || normalizedCategory === activeScene;
         const qOk = !q || [item.name, item.displayName, item.displayNameEn || "", item.desc || "", item.descEn || "", item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", ...(item.availableIn || []), ...item.tags].join(" ").toLowerCase().includes(q);
         return envOk && sceneOk && qOk;
       });
+      const list = aggregateParentItems(rawList);
       const direction = sortDirection === "asc" ? 1 : -1;
       return list.sort((a, b) => {
         if (sortBy === "name") {
@@ -1159,10 +1247,10 @@
     function renderScenes() {
       sceneList.innerHTML = sceneKeys.map((label) => {
         const test = label === "全部" ? (() => true) : ((item) => normalizeSceneLabel(item) === label);
-        const count = capabilities.filter(item => {
+        const count = aggregateParentItems(capabilities.filter(item => {
           const envOk = hostOk(item);
           return envOk && test(item);
-        }).length;
+        })).length;
         return `<button class="scene-btn ${label === activeScene ? "active" : ""}" data-scene="${label}"><span>${translations[activeLang].sceneLabels[label] || label}</span><span class="scene-count">${count}</span></button>`;
       }).join("");
       document.querySelectorAll(".scene-btn").forEach(btn => btn.addEventListener("click", () => {
@@ -1182,14 +1270,14 @@
             <h3>${capabilityName(item)}</h3>
             <div class="skill-id">${item.name}</div>
             <p>${capabilityDesc(item)}</p>
-            <div class="tags">${item.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div>
+            <div class="tags">${item.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}${item.sourceCount > 1 ? `<span class="tag">${item.sourceCount} items</span>` : ""}</div>
           </div>
           <div class="score">${item.score}</div>
         </article>
       `).join("") || `<div class="panel" style="padding:18px;color:var(--muted)">${t("noMatch")}</div>`;
 
       document.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => {
-        selected = capabilities.find(item => item.name === card.dataset.name);
+        selected = filtered().find(item => item.name === card.dataset.name);
         renderCards();
         renderDetail();
       }));
@@ -1212,6 +1300,7 @@
           <h3>${t("sourceBlock")}</h3>
           <div class="style-note"><strong>${selected.host || "local"}</strong> · ${selected.sourceType || "capability"}<br>${selected.sourcePathDisplay || selected.sourcePath}</div>
           ${Array.isArray(selected.availableIn) && selected.availableIn.length > 1 ? `<div class="source-list"><div class="source-entry"><strong>${t("sourceHosts")}</strong><br>${selected.availableIn.join(", ")}</div></div>` : ""}
+          ${Array.isArray(selected.childItems) && selected.childItems.length ? `<div class="source-list">${selected.childItems.slice(0, 16).map(child => `<div class="source-entry">${capabilityName(child)} · ${child.name}</div>`).join("")}${selected.childItems.length > 16 ? `<div class="source-entry">+ ${selected.childItems.length - 16} more</div>` : ""}</div>` : ""}
         </div>
         ` : ""}
 

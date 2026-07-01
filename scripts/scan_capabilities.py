@@ -85,7 +85,11 @@ def infer_category(text: str, *, raw_name: str = "", source_type: str = "") -> s
         "render", "wrangler", "ops", "devops", "sre", "platform", "infrastructure",
         "gateway", "zero trust", "network", "tunnel", "pages",
     )
-    if any(token in value for token in deploy_terms):
+    deploy_name_terms = (
+        "cloudflare", "deploy", "deployment", "release", "wrangler", "vercel",
+        "netlify", "devops", "sre", "infrastructure", "tunnel",
+    )
+    if any(re.search(rf"(^|[-_\s/]){re.escape(token)}($|[-_\s/])", name) for token in deploy_name_terms):
         return "部署"
     if source_type == "template-library":
         return "UI / 前端"
@@ -95,6 +99,8 @@ def infer_category(text: str, *, raw_name: str = "", source_type: str = "") -> s
         return "UI / 前端"
     if any(re.search(rf"(^|[-_\s/]){re.escape(token)}($|[-_\s/])", name) for token in ui_name_terms):
         return "UI / 前端"
+    if any(token in value for token in deploy_terms):
+        return "部署"
     if any(token in value for token in ui_terms):
         return "UI / 前端"
     if any(token in value for token in ("web", "browser", "search", "scrape", "http", "automation", "mcp", "crawler", "api", "integration")):
