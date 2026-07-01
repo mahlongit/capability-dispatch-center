@@ -1,0 +1,38 @@
+{
+  "categoryOverrides": {
+    "gsap-skills": {
+      "cat": "UI / 前端",
+      "reason": "GSAP/GreenSock front-end motion and animation skill suite."
+    },
+    "huashu-nuwa": {
+      "cat": "网页 / 自动化",
+      "reason": "Research-to-skill generation workflow, closer to web automation and content production than backend code."
+    },
+    "nuwaskill": {
+      "cat": "网页 / 自动化",
+      "reason": "Alias for Nuwa-style skill generation workflow."
+    },
+    "design-md": {
+      "cat": "UI / 前端",
+      "reason": "Local UI/design template CLI and Hermes skill."
+    },
+    "design-md-templates": {
+      "cat": "UI / 前端",
+      "reason": "Local UI/design template library."
+    }
+  },
+  "referenceRecords": [
+    {
+      "name": "easy-vibe",
+      "displayName": "Easy Vibe",
+      "displayNameEn": "Easy Vibe",
+      "cat": "知识 / 记忆",
+      "repoUrl": "https://github.com/datawhalechina/easy-vibe",
+      "installedAt": "2026-06-30T00:00:00+08:00",
+      "availableIn": ["codex", "hermes", "reference"],
+      "desc": "DatawhaleChina easy-vibe 教程/文档仓库；不部署，只作为知识参考源，可供 Codex 和 Hermes 在任务中引用。",
+      "descEn": "DatawhaleChina easy-vibe tutorial and documentation repository. Use it as a knowledge reference for Codex and Hermes, not as a deployable tool.",
+      "evidence": "thread:安装并使用能力路由; user-reported 2026-06-30 install/reference"
+    }
+  ]
+}

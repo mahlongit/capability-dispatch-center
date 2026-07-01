@@ -1181,9 +1181,6 @@
 
     function parentBucket(item) {
       const sourcePath = String(item.sourcePathDisplay || item.sourcePath || "");
-      if (item.sourceType === "skill" && availableHosts(item).includes("agents")) {
-        return `generic-skills:${normalizeSceneLabel(item)}`;
-      }
       if (item.sourceType === "agent") {
         return `${item.host || "agent"}:agents`;
       }
@@ -1232,6 +1229,9 @@
             descEn: `Parent capability group with ${1} folded child item. Searching child names still returns this parent group.`,
             tags: listUnique(["parent", ...(item.sceneTags || []), ...(item.tags || []), item.host || "local", item.sourceType || "capability"]),
             sceneTags: listUnique([...(item.sceneTags || []), "父级能力"]),
+            searchText: [item.searchText || "", item.name || "", item.displayName || "", item.desc || ""].join(" "),
+            localDocs: [...(item.localDocs || [])],
+            localDocDisplays: [...(item.localDocDisplays || [])],
             sourceCount: 1,
             childItems: [item],
             requiresSubskills: true,
@@ -1248,6 +1248,9 @@
         parent.availableIn = listUnique([...(parent.availableIn || []), ...availableHosts(item)]);
         parent.tags = listUnique([...parent.tags, ...(item.sceneTags || []), ...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean);
         parent.sceneTags = listUnique([...(parent.sceneTags || []), ...(item.sceneTags || []), "父级能力"]);
+        parent.searchText = [parent.searchText || "", item.searchText || "", item.name || "", item.displayName || "", item.desc || ""].join(" ");
+        parent.localDocs = listUnique([...(parent.localDocs || []), ...(item.localDocs || [])]);
+        parent.localDocDisplays = listUnique([...(parent.localDocDisplays || []), ...(item.localDocDisplays || [])]);
         if (!parent.repoUrl && item.repoUrl) parent.repoUrl = item.repoUrl;
         parent.installedAt = String(item.installedAt || "") > String(parent.installedAt || "") ? item.installedAt : parent.installedAt;
         parent.desc = `父级能力组，已折叠 ${parent.sourceCount} 个子项。搜索子项名称时仍会命中这个父级组。`;
@@ -1271,6 +1274,9 @@
             availableIn: listUnique([...(item.availableIn || []), ...availableHosts(item)]),
             tags: listUnique([...(item.sceneTags || []), ...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean),
             sceneTags: listUnique([...(item.sceneTags || [])]),
+            searchText: item.searchText || "",
+            localDocs: [...(item.localDocs || [])],
+            localDocDisplays: [...(item.localDocDisplays || [])],
             sourceCount: Number(item.sourceCount || 1),
           });
           continue;
@@ -1279,6 +1285,9 @@
         parent.availableIn = listUnique([...(parent.availableIn || []), ...(item.availableIn || []), ...availableHosts(item)]);
         parent.tags = listUnique([...(parent.tags || []), ...(item.sceneTags || []), ...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean);
         parent.sceneTags = listUnique([...(parent.sceneTags || []), ...(item.sceneTags || [])]);
+        parent.searchText = [parent.searchText || "", item.searchText || "", item.name || "", item.displayName || "", item.desc || ""].join(" ");
+        parent.localDocs = listUnique([...(parent.localDocs || []), ...(item.localDocs || [])]);
+        parent.localDocDisplays = listUnique([...(parent.localDocDisplays || []), ...(item.localDocDisplays || [])]);
         parent.sourceCount = Number(parent.sourceCount || 1) + Number(item.sourceCount || 1);
         if (!Array.isArray(parent.childItems) || !parent.childItems.length) {
           parent.childItems = [sourceSnapshot(parent)];
@@ -1350,7 +1359,7 @@
         const childText = Array.isArray(item.childItems)
           ? item.childItems.map(child => [child.name, child.displayName, child.desc, child.sourcePathDisplay].join(" ")).join(" ")
           : "";
-        const qOk = !q || [item.name, item.displayName, item.displayNameEn || "", item.desc || "", item.descEn || "", item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", item.sourcePathDisplay || "", item.repoUrl || "", item.installKind || "", item.installKindLabel || "", item.metadataCategory || "", childText, ...(item.availableIn || []), ...(item.sceneTags || []), ...(item.tags || [])].join(" ").toLowerCase().includes(q);
+        const qOk = !q || [item.name, item.displayName, item.displayNameEn || "", item.desc || "", item.descEn || "", item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", item.sourcePathDisplay || "", item.repoUrl || "", item.installKind || "", item.installKindLabel || "", item.metadataCategory || "", item.categorySource || "", item.descSource || "", item.searchText || "", childText, ...(item.availableIn || []), ...(item.sceneTags || []), ...(item.tags || []), ...(item.localDocDisplays || [])].join(" ").toLowerCase().includes(q);
         return envOk && sceneOk && qOk;
       });
       const list = aggregateParentItems(rawList);
@@ -1432,6 +1441,8 @@
           <h3>${t("sourceBlock")}</h3>
           <div class="style-note"><strong>${selected.host || "local"}</strong> · ${selected.sourceType || "capability"} · ${selected.installKindLabel || selected.installKind || "本机发现"}<br>${selected.sourcePathDisplay || selected.sourcePath}${selected.repoUrl ? `<br><a href="${selected.repoUrl}" target="_blank" rel="noreferrer">${selected.repoUrl}</a>` : ""}${selected.installEvidence ? `<br>${selected.installEvidence}` : ""}</div>
           ${Array.isArray(selected.availableIn) && selected.availableIn.length > 1 ? `<div class="source-list"><div class="source-entry"><strong>${t("sourceHosts")}</strong><br>${selected.availableIn.join(", ")}</div></div>` : ""}
+          ${Array.isArray(selected.localDocDisplays) && selected.localDocDisplays.length ? `<div class="source-list"><div class="source-entry"><strong>${activeLang === "en" ? "Local docs read" : "已读取本地说明"}</strong><br>${selected.localDocDisplays.slice(0, 8).join("<br>")}${selected.localDocDisplays.length > 8 ? `<br>+ ${selected.localDocDisplays.length - 8} more docs` : ""}</div></div>` : ""}
+          ${(selected.categorySource || selected.descSource) ? `<div class="source-list"><div class="source-entry"><strong>${activeLang === "en" ? "Evidence" : "判断依据"}</strong><br>category: ${selected.categorySource || "-"}<br>description: ${selected.descSource || "-"}</div></div>` : ""}
           ${Array.isArray(selected.childItems) && selected.childItems.length ? `<div class="source-list">${selected.childItems.slice(0, 16).map(child => `<div class="source-entry">${capabilityName(child)} · ${child.name}<br>${child.sourcePathDisplay || child.sourcePath || child.host || ""}</div>`).join("")}${selected.childItems.length > 16 ? `<div class="source-entry">+ ${selected.childItems.length - 16} more sources</div>` : ""}</div>` : ""}
         </div>
         ` : ""}

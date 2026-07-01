@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-VERSION = "0.2.3"
+VERSION = "0.3.0"
 
 HOST_LABELS = {
     "codex": {"zh": "Codex / CDX", "en": "Codex / CDX"},
@@ -36,15 +36,6 @@ HOST_LABELS = {
     "reference": {"zh": "知识参考", "en": "Reference"},
 }
 
-CATEGORY_OVERRIDES = {
-    "gsap-skills": "UI / 前端",
-    "huashu-nuwa": "网页 / 自动化",
-    "nuwaskill": "网页 / 自动化",
-    "easy-vibe": "知识 / 记忆",
-    "design-md": "UI / 前端",
-    "design-md-templates": "UI / 前端",
-}
-
 DAS_CATEGORY_MAP = {
     "motion-animation": "UI / 前端",
     "design": "UI / 前端",
@@ -54,6 +45,17 @@ DAS_CATEGORY_MAP = {
     "docs": "知识 / 记忆",
     "tutorial": "知识 / 记忆",
 }
+
+LOCAL_DOC_NAMES = (
+    "README.md",
+    "readme.md",
+    "README.zh-CN.md",
+    "README_CN.md",
+    "README-zh.md",
+    "介绍.md",
+    "USAGE.md",
+    "usage.md",
+)
 
 
 @dataclass(frozen=True)
@@ -76,6 +78,12 @@ def parse_args() -> argparse.Namespace:
         help="Output JSON path.",
     )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
+    parser.add_argument(
+        "--overrides",
+        type=Path,
+        default=repo_root / "capability-overrides.json",
+        help="Optional capability override and reference manifest.",
+    )
     return parser.parse_args()
 
 
@@ -181,16 +189,44 @@ def metadata_text(metadata: dict[str, object]) -> str:
     return " ".join(values)
 
 
-def infer_category(text: str, *, raw_name: str = "", source_type: str = "", metadata: dict[str, object] | None = None) -> str:
+def normalized_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+
+
+def load_overrides(path: Path | None) -> dict[str, object]:
+    if not path:
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except OSError:
+        return {}
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"Invalid override manifest {path}: {error}") from error
+
+
+def category_override_for(raw_name: str, overrides: dict[str, object]) -> str | None:
+    category_overrides = overrides.get("categoryOverrides")
+    if not isinstance(category_overrides, dict):
+        return None
+    record = category_overrides.get(normalized_key(raw_name)) or category_overrides.get(raw_name)
+    if isinstance(record, dict):
+        value = record.get("cat")
+        return str(value) if value else None
+    if isinstance(record, str):
+        return record
+    return None
+
+
+def classify_category(text: str, *, raw_name: str = "", source_type: str = "", metadata: dict[str, object] | None = None, overrides: dict[str, object] | None = None) -> tuple[str, str]:
     value = text.lower()
     name = raw_name.lower()
     metadata = metadata or {}
-    normalized_name = re.sub(r"[^a-z0-9]+", "-", name).strip("-")
-    if normalized_name in CATEGORY_OVERRIDES:
-        return CATEGORY_OVERRIDES[normalized_name]
+    override = category_override_for(raw_name, overrides or {})
+    if override:
+        return override, "override"
     das_category = str(metadata.get("das.category", "")).lower()
     if das_category in DAS_CATEGORY_MAP:
-        return DAS_CATEGORY_MAP[das_category]
+        return DAS_CATEGORY_MAP[das_category], "metadata:das.category"
     ui_terms = (
         "ui", "ux", "frontend", "front-end", "front end", "interface", "component",
         "visual", "css", "accessibility", "brand", "figma", "design-system",
@@ -211,31 +247,66 @@ def infer_category(text: str, *, raw_name: str = "", source_type: str = "", meta
         "cloudflare", "deploy", "deployment", "release", "wrangler", "vercel",
         "netlify", "devops", "sre", "infrastructure", "tunnel",
     )
+    knowledge_terms = (
+        "analysis", "analyst", "strategy", "strategist", "market", "business",
+        "finance", "financial", "legal", "compliance", "sales", "marketing",
+        "academic", "research", "grammar", "writer", "writing", "brainstorm",
+        "matrix", "roadmap", "assumption", "feature", "okr", "monetization",
+        "pricing", "battlecard", "canvas", "segment", "cohort", "positioning",
+        "customer", "journey", "story", "stories", "nda", "historian",
+        "narratologist", "chief of staff", "coach", "commerce",
+    )
+    automation_terms = (
+        "agent", "agentic", "orchestrator", "workflow", "context", "identity graph",
+        "reminder", "screenshot", "feishu", "find-skills", "findmy", "automation",
+    )
+    code_terms = (
+        "code", "engineering", "engineer", "developer", "database", "debug",
+        "git", "implementation", "observability", "instrumentation", "incident",
+        "security", "blockchain", "cms", "minimal change", "quality",
+        "simplification", "review", "backend", "api",
+    )
     if source_type == "template-library":
-        return "UI / 前端"
+        return "UI / 前端", "sourceType:template-library"
     if source_type == "cli" and "design-md" in name:
-        return "UI / 前端"
+        return "UI / 前端", "sourceType:cli"
+    if source_type == "plugin":
+        return "网页 / 自动化", "sourceType:plugin"
     if any(token in value for token in ("教程", "文档", "知识参考", "knowledge", "docs", "documentation", "tutorial", "reference", "easy-vibe", "datawhale")):
-        return "知识 / 记忆"
+        return "知识 / 记忆", "keyword:knowledge"
+    if "retro" in name:
+        return "知识 / 记忆", "name:retro"
+    if any(token in value for token in knowledge_terms):
+        return "知识 / 记忆", "keyword:knowledge-domain"
     if any(token in value for token in ("女娲", "造skill", "蒸馏", "人物skill", "deep research", "skill generation", "agent reach")):
-        return "网页 / 自动化"
+        return "网页 / 自动化", "keyword:automation"
+    if any(token in value for token in automation_terms):
+        return "网页 / 自动化", "keyword:automation-domain"
     if "design" in name:
-        return "UI / 前端"
+        return "UI / 前端", "name:design"
     if any(re.search(rf"(^|[-_\s/]){re.escape(token)}($|[-_\s/])", name) for token in ui_name_terms):
-        return "UI / 前端"
+        return "UI / 前端", "name:ui"
     if any(re.search(rf"(^|[-_\s/]){re.escape(token)}($|[-_\s/])", name) for token in deploy_name_terms):
-        return "部署"
+        return "部署", "name:deploy"
+    if "setup" in name:
+        return "部署", "name:setup"
     if any(token in value for token in deploy_terms):
-        return "部署"
+        return "部署", "keyword:deploy"
     if any(token in value for token in ui_terms):
-        return "UI / 前端"
+        return "UI / 前端", "keyword:ui"
+    if any(token in value for token in code_terms):
+        return "代码 / 后端", "keyword:code-domain"
     if any(token in value for token in ("web", "browser", "search", "scrape", "http", "automation", "mcp", "crawler", "api", "integration")):
-        return "网页 / 自动化"
+        return "网页 / 自动化", "keyword:automation"
     if any(token in value for token in ("video", "audio", "media", "caption", "podcast", "editing", "voice", "animation", "storyboard")):
-        return "视频 / 内容"
+        return "视频 / 内容", "keyword:media"
     if any(token in value for token in ("memory", "knowledge", "docs", "document", "research", "prompt", "writer", "study", "brief")):
-        return "知识 / 记忆"
-    return "代码 / 后端"
+        return "知识 / 记忆", "keyword:knowledge"
+    return "代码 / 后端", "fallback:backend"
+
+
+def infer_category(text: str, *, raw_name: str = "", source_type: str = "", metadata: dict[str, object] | None = None, overrides: dict[str, object] | None = None) -> str:
+    return classify_category(text, raw_name=raw_name, source_type=source_type, metadata=metadata, overrides=overrides)[0]
 
 
 def infer_env(host: str, source_type: str) -> list[str]:
@@ -277,6 +348,69 @@ def safe_read(path: Path, limit: int = 6000) -> str:
         return path.read_text(encoding="utf-8", errors="ignore")[:limit]
     except OSError:
         return ""
+
+
+def find_local_docs(source_path: Path) -> list[Path]:
+    base = source_path if source_path.is_dir() else source_path.parent
+    docs: list[Path] = []
+    for name in LOCAL_DOC_NAMES:
+        candidate = base / name
+        if candidate.exists() and candidate.is_file():
+            docs.append(candidate)
+    return docs
+
+
+def summarize_doc_text(text: str) -> str | None:
+    frontmatter = parse_frontmatter(text)
+    description = frontmatter.get("description")
+    if description:
+        return str(description).strip()
+    paragraphs: list[str] = []
+    for block in re.split(r"\n\s*\n", text):
+        cleaned = re.sub(r"```.*?```", "", block, flags=re.S).strip()
+        cleaned = re.sub(r"^#+\s*", "", cleaned)
+        cleaned = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", cleaned)
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        if not cleaned or cleaned.startswith(("---", "<", "!", "|")):
+            continue
+        if len(cleaned) < 24:
+            continue
+        paragraphs.append(cleaned)
+        if len(paragraphs) >= 2:
+            break
+    if not paragraphs:
+        return None
+    return " ".join(paragraphs)[:420]
+
+
+def strip_frontmatter(text: str) -> str:
+    if not text.startswith("---\n"):
+        return text
+    _, marker, remainder = text.partition("\n---")
+    return remainder if marker else text
+
+
+def is_generic_description(description: str | None) -> bool:
+    if not description:
+        return True
+    value = description.strip()
+    generic_markers = (
+        "Discovered local skill",
+        "从 Codex / CDX 发现的本地 skill",
+        "从 通用 skills 发现的本地 skill",
+        "从 Hermes 发现的本地 skill",
+        "Discovered plugin directory",
+        "Discovered MCP server",
+        "从本机配置中发现的 MCP 服务",
+    )
+    return len(value) < 28 or any(marker in value for marker in generic_markers)
+
+
+def is_thin_description(description: str | None) -> bool:
+    if not description:
+        return True
+    value = re.sub(r"\s+", " ", description).strip()
+    return len(value) < 90
 
 
 def summarize_text(text: str) -> tuple[str | None, str | None]:
@@ -363,6 +497,27 @@ def infer_repo_url(metadata: dict[str, object], text: str) -> str | None:
             return value.rstrip(".,)")
     match = re.search(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", text)
     return match.group(0).rstrip(".,)") if match else None
+
+
+def infer_git_remote_url(source_path: Path) -> str | None:
+    base = source_path if source_path.is_dir() else source_path.parent
+    for candidate_base in [base, *base.parents]:
+        config = candidate_base / ".git" / "config"
+        if not config.exists() or not config.is_file():
+            continue
+        text = safe_read(config, limit=8000)
+        match = re.search(r"url\s*=\s*(.+)", text)
+        if not match:
+            return None
+        value = match.group(1).strip()
+        ssh_match = re.match(r"git@github\.com:([^/]+/[^/]+?)(?:\.git)?$", value)
+        if ssh_match:
+            return f"https://github.com/{ssh_match.group(1)}"
+        https_match = re.match(r"https://github\.com/([^/]+/[^/]+?)(?:\.git)?$", value)
+        if https_match:
+            return f"https://github.com/{https_match.group(1)}"
+        return value
+    return None
 
 
 def infer_install_kind(host: str, source_type: str, source_path: Path, metadata: dict[str, object]) -> tuple[str, str]:
@@ -460,23 +615,41 @@ def build_capability(
     source_path: Path,
     raw_name: str,
     raw_description: str | None,
+    overrides: dict[str, object] | None = None,
 ) -> dict[str, object]:
     source_text = safe_read(source_path)
     metadata = parse_frontmatter(source_text)
+    body_description = summarize_doc_text(strip_frontmatter(source_text))
+    doc_paths = find_local_docs(source_path)
+    doc_texts = [safe_read(path, limit=12000) for path in doc_paths]
+    doc_text = "\n\n".join(doc_texts)
+    doc_description = summarize_doc_text(doc_text) if doc_text else None
     display_name = slug_to_title(raw_name)
     display_name_en = english_title(raw_name)
     default_zh, default_en = default_description(host, source_type, raw_name)
-    description = raw_description or default_en
-    description_zh = raw_description if raw_description and re.search(r"[\u4e00-\u9fff]", raw_description) else default_zh
-    description_en = raw_description if raw_description and not re.search(r"[\u4e00-\u9fff]", raw_description) else default_en
-    category = infer_category(
-        " ".join([raw_name, display_name, description, source_type, metadata_text(metadata)]),
+    if doc_description and (is_generic_description(raw_description) or is_thin_description(raw_description)):
+        description = doc_description
+        desc_source = "local-readme"
+    elif body_description and (is_generic_description(raw_description) or is_thin_description(raw_description)):
+        description = body_description
+        desc_source = "skill-body"
+    elif not is_generic_description(raw_description):
+        description = raw_description or ""
+        desc_source = "skill-frontmatter"
+    else:
+        description = raw_description or default_en
+        desc_source = "default"
+    description_zh = description if description and re.search(r"[\u4e00-\u9fff]", description) else default_zh
+    description_en = description if description and not re.search(r"[\u4e00-\u9fff]", description) else default_en
+    category, category_source = classify_category(
+        " ".join([raw_name, display_name, description, source_type, metadata_text(metadata), doc_text[:2000]]),
         raw_name=raw_name,
         source_type=source_type,
         metadata=metadata,
+        overrides=overrides,
     )
     env = infer_env(host, source_type)
-    repo_url = infer_repo_url(metadata, source_text)
+    repo_url = infer_repo_url(metadata, "\n".join([source_text, doc_text])) or infer_git_remote_url(source_path)
     install_kind, install_label = infer_install_kind(host, source_type, source_path, metadata)
     scene_tags = infer_scene_tags(
         raw_name=raw_name,
@@ -527,10 +700,15 @@ def build_capability(
         "sceneTags": scene_tags,
         "repoUrl": repo_url,
         "metadataCategory": first_string(metadata.get("das.category")),
+        "categorySource": category_source,
+        "descSource": desc_source,
+        "localDocs": [str(path) for path in doc_paths],
+        "localDocDisplays": [str(path).replace(str(Path.home()), "~") for path in doc_paths],
+        "searchText": " ".join([raw_name, display_name, description, metadata_text(metadata), doc_text[:3000]]),
     }
 
 
-def scan_skill_root(root: ScanRoot) -> Iterable[dict[str, object]]:
+def scan_skill_root(root: ScanRoot, overrides: dict[str, object]) -> Iterable[dict[str, object]]:
     if not root.path.exists():
         return []
     results = []
@@ -560,12 +738,13 @@ def scan_skill_root(root: ScanRoot) -> Iterable[dict[str, object]]:
                 source_path=marker,
                 raw_name=name,
                 raw_description=raw_description,
+                overrides=overrides,
             )
         )
     return results
 
 
-def scan_agent_files(root: ScanRoot, glob_pattern: str) -> Iterable[dict[str, object]]:
+def scan_agent_files(root: ScanRoot, glob_pattern: str, overrides: dict[str, object]) -> Iterable[dict[str, object]]:
     if not root.path.exists():
         return []
     results = []
@@ -582,12 +761,13 @@ def scan_agent_files(root: ScanRoot, glob_pattern: str) -> Iterable[dict[str, ob
                 source_path=candidate,
                 raw_name=name,
                 raw_description=raw_description,
+                overrides=overrides,
             )
         )
     return results
 
 
-def scan_plugin_roots(path: Path) -> Iterable[dict[str, object]]:
+def scan_plugin_roots(path: Path, overrides: dict[str, object]) -> Iterable[dict[str, object]]:
     if not path.exists():
         return []
     results = []
@@ -604,12 +784,13 @@ def scan_plugin_roots(path: Path) -> Iterable[dict[str, object]]:
                 source_path=candidate,
                 raw_name=name,
                 raw_description=f"Discovered plugin directory in {candidate.parent.name}.",
+                overrides=overrides,
             )
         )
     return results
 
 
-def scan_cli_tools(home: Path) -> Iterable[dict[str, object]]:
+def scan_cli_tools(home: Path, overrides: dict[str, object]) -> Iterable[dict[str, object]]:
     cli_dir = home / ".local" / "bin"
     candidates = ["design-md"]
     results = []
@@ -626,12 +807,13 @@ def scan_cli_tools(home: Path) -> Iterable[dict[str, object]]:
                 source_path=path,
                 raw_name=name,
                 raw_description=f"本地命令 `{name}`，适合列出、定位或安装 UI 模板与设计规范。",
+                overrides=overrides,
             )
         )
     return results
 
 
-def scan_template_library(home: Path) -> Iterable[dict[str, object]]:
+def scan_template_library(home: Path, overrides: dict[str, object]) -> Iterable[dict[str, object]]:
     library_root = home / ".local" / "share" / "awesome-design-md" / "design-md"
     if not library_root.exists():
         return []
@@ -642,6 +824,7 @@ def scan_template_library(home: Path) -> Iterable[dict[str, object]]:
         source_path=library_root,
         raw_name="design-md templates",
         raw_description=f"本地 design-md 模板库，共 {len(templates)} 套模板。可用 `design-md list`、`design-md path <name>` 和 `design-md install <name> <project>` 查看或安装模板。",
+        overrides=overrides,
     )
     capability["templateItems"] = [
         {
@@ -703,26 +886,43 @@ def reference_capability(
         "repoUrl": repo_url,
         "metadataCategory": "knowledge",
         "installEvidence": evidence,
+        "categorySource": "reference-manifest",
+        "descSource": "reference-manifest",
+        "localDocs": [],
+        "localDocDisplays": [],
+        "searchText": " ".join([name, display_name, description_zh, description_en, repo_url, evidence]),
     }
 
 
-def scan_reference_records(home: Path) -> Iterable[dict[str, object]]:
+def scan_reference_records(home: Path, overrides: dict[str, object]) -> Iterable[dict[str, object]]:
     del home
-    return [
-        reference_capability(
-            name="easy-vibe",
-            display_name="Easy Vibe",
-            description_zh="DatawhaleChina easy-vibe 教程/文档仓库；不部署，只作为知识参考源，可供 Codex 和 Hermes 在任务中引用。",
-            description_en="DatawhaleChina easy-vibe tutorial and documentation repository. Use it as a knowledge reference for Codex and Hermes, not as a deployable tool.",
-            category="知识 / 记忆",
-            repo_url="https://github.com/datawhalechina/easy-vibe",
-            installed_at="2026-06-30T00:00:00+08:00",
-            evidence="thread:安装并使用能力路由; user-reported 2026-06-30 install/reference",
+    records = overrides.get("referenceRecords", [])
+    if not isinstance(records, list):
+        return []
+    results = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        name = str(record.get("name") or "").strip()
+        if not name:
+            continue
+        display_name = str(record.get("displayName") or slug_to_title(name))
+        results.append(
+            reference_capability(
+                name=name,
+                display_name=display_name,
+                description_zh=str(record.get("desc") or default_description("reference", "reference", name)[0]),
+                description_en=str(record.get("descEn") or default_description("reference", "reference", name)[1]),
+                category=str(record.get("cat") or "知识 / 记忆"),
+                repo_url=str(record.get("repoUrl") or ""),
+                installed_at=str(record.get("installedAt") or datetime.now(timezone.utc).isoformat()),
+                evidence=str(record.get("evidence") or "capability-overrides.json"),
+            )
         )
-    ]
+    return results
 
 
-def scan_mcp_configs(search_roots: list[Path]) -> Iterable[dict[str, object]]:
+def scan_mcp_configs(search_roots: list[Path], overrides: dict[str, object]) -> Iterable[dict[str, object]]:
     results = []
     seen: set[str] = set()
     for root in search_roots:
@@ -756,6 +956,7 @@ def scan_mcp_configs(search_roots: list[Path]) -> Iterable[dict[str, object]]:
                         source_path=candidate,
                         raw_name=str(name),
                         raw_description=description,
+                        overrides=overrides,
                     )
                 )
     return results
@@ -773,7 +974,7 @@ def load_config(path: Path) -> dict[str, object] | None:
     return None
 
 
-def scan_single_files(project_root: Path) -> Iterable[dict[str, object]]:
+def scan_single_files(project_root: Path, overrides: dict[str, object]) -> Iterable[dict[str, object]]:
     results = []
     for relative in [".windsurfrules", "AGENTS.md", "SOUL.md"]:
         candidate = project_root / relative
@@ -789,6 +990,7 @@ def scan_single_files(project_root: Path) -> Iterable[dict[str, object]]:
                 source_path=candidate,
                 raw_name=name,
                 raw_description=raw_description,
+                overrides=overrides,
             )
         )
     return results
@@ -815,6 +1017,9 @@ def unique_capabilities(items: Iterable[dict[str, object]]) -> list[dict[str, ob
         merged["sourcePathDisplays"] = list(dict.fromkeys(list(merged.get("sourcePathDisplays", [])) + [item["sourcePathDisplay"]]))
         merged["tags"] = list(dict.fromkeys(list(merged.get("tags", [])) + list(item.get("tags", []))))
         merged["sceneTags"] = list(dict.fromkeys(list(merged.get("sceneTags", [])) + list(item.get("sceneTags", []))))
+        merged["localDocs"] = list(dict.fromkeys(list(merged.get("localDocs", [])) + list(item.get("localDocs", []))))
+        merged["localDocDisplays"] = list(dict.fromkeys(list(merged.get("localDocDisplays", [])) + list(item.get("localDocDisplays", []))))
+        merged["searchText"] = " ".join([str(merged.get("searchText", "")), str(item.get("searchText", ""))]).strip()
         if str(item.get("installedAt", "")) > str(merged.get("installedAt", "")):
             merged["installedAt"] = item["installedAt"]
             merged["sourcePath"] = item["sourcePath"]
@@ -822,6 +1027,8 @@ def unique_capabilities(items: Iterable[dict[str, object]]) -> list[dict[str, ob
             merged["installKind"] = item.get("installKind", merged.get("installKind"))
             merged["installKindLabel"] = item.get("installKindLabel", merged.get("installKindLabel"))
             merged["installEvidence"] = item.get("installEvidence", merged.get("installEvidence"))
+            merged["descSource"] = item.get("descSource", merged.get("descSource"))
+            merged["categorySource"] = item.get("categorySource", merged.get("categorySource"))
         if item.get("repoUrl") and not merged.get("repoUrl"):
             merged["repoUrl"] = item["repoUrl"]
         if item.get("metadataCategory") and not merged.get("metadataCategory"):
@@ -869,24 +1076,25 @@ def main() -> int:
     home = args.home.expanduser().resolve()
     project_root = args.project.resolve()
     output = args.output.resolve()
+    overrides = load_overrides(args.overrides.resolve() if args.overrides else None)
 
     skill_roots, file_roots, plugin_roots = common_roots(home, project_root)
 
     capabilities: list[dict[str, object]] = []
     for root in skill_roots:
-        capabilities.extend(scan_skill_root(root))
+        capabilities.extend(scan_skill_root(root, overrides))
     for root in file_roots:
         pattern = "*.mdc" if root.source_type == "rule" else "*.md"
         if root.path.name == "agents" and root.host == "codex":
             pattern = "*.toml"
-        capabilities.extend(scan_agent_files(root, pattern))
+        capabilities.extend(scan_agent_files(root, pattern, overrides))
     for root in plugin_roots:
-        capabilities.extend(scan_plugin_roots(root))
-    capabilities.extend(scan_mcp_configs([home / ".codex", project_root]))
-    capabilities.extend(scan_single_files(project_root))
-    capabilities.extend(scan_cli_tools(home))
-    capabilities.extend(scan_template_library(home))
-    capabilities.extend(scan_reference_records(home))
+        capabilities.extend(scan_plugin_roots(root, overrides))
+    capabilities.extend(scan_mcp_configs([home / ".codex", project_root], overrides))
+    capabilities.extend(scan_single_files(project_root, overrides))
+    capabilities.extend(scan_cli_tools(home, overrides))
+    capabilities.extend(scan_template_library(home, overrides))
+    capabilities.extend(scan_reference_records(home, overrides))
 
     deduped = unique_capabilities(capabilities)
     summary = Counter(item["sourceType"] for item in deduped)
@@ -901,6 +1109,7 @@ def main() -> int:
             "capabilityCount": len(deduped),
             "sourceTypeSummary": dict(summary),
             "hostSummary": dict(hosts),
+            "overrideManifest": str(args.overrides.resolve()) if args.overrides else None,
             "rootsScanned": sorted({str(root.path) for root in skill_roots + file_roots if root.path.exists()} | {str(path) for path in plugin_roots if path.exists()}),
         },
         "capabilities": deduped,
