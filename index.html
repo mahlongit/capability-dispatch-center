@@ -207,10 +207,7 @@
 
     .sidebar {
       padding-left: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      overflow: auto;
+      overflow: hidden;
     }
 
     .main {
@@ -233,8 +230,23 @@
       min-height: 0;
     }
 
+    .sidebar-panel {
+      height: 100%;
+      overflow: auto;
+      padding: 10px;
+    }
+
+    .sidebar-section {
+      padding: 0 0 10px;
+    }
+
+    .sidebar-section + .sidebar-section {
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+
     .panel-title {
-      padding: 10px 12px 0;
+      padding: 0 2px 8px;
       color: var(--muted);
       font: 600 12px/1.2 var(--font-display);
       letter-spacing: .05em;
@@ -242,12 +254,12 @@
     }
 
     .scene-list {
-      padding: 8px;
+      padding: 0;
       display: grid;
       gap: 4px;
       overflow: auto;
       min-height: 0;
-      max-height: 300px;
+      max-height: none;
     }
 
     .scene-btn {
@@ -277,13 +289,14 @@
     }
 
     .storage {
-      padding: 8px;
+      padding: 0;
     }
 
     .storage p {
       margin: 0 0 8px;
       color: var(--muted);
       font-size: 11px;
+      line-height: 1.35;
     }
 
     .storage-grid {
@@ -563,7 +576,7 @@
     }
 
     .source-meta {
-      padding: 10px;
+      padding: 0;
     }
 
     .source-meta p {
@@ -764,28 +777,30 @@
     </header>
 
     <aside class="sidebar">
-      <div class="panel" style="display:flex;flex-direction:column;min-height:0">
-        <div class="panel-title" id="sceneTitle">场景</div>
-        <div class="scene-list" id="sceneList"></div>
-      </div>
-      <div class="panel storage">
-        <div class="panel-title" style="padding:0 0 12px" id="scopeTitle">范围说明</div>
-        <p id="scopeText">`全部能力` 会展示本地、远程和共享能力。筛选只改变视图，不会触发任何执行。</p>
-        <div class="storage-grid">
-          <div class="storage-box"><strong id="boxLocalTitle">本地</strong><span id="boxLocalText">本机脚本或工具</span></div>
-          <div class="storage-box"><strong id="boxRemoteTitle">远程</strong><span id="boxRemoteText">API 或托管服务</span></div>
-          <div class="storage-box"><strong id="boxSharedTitle">共享</strong><span id="boxSharedText">两类环境均可用</span></div>
-          <div class="storage-box"><strong id="boxReadonlyTitle">只读</strong><span id="boxReadonlyText">选择能力不执行</span></div>
-        </div>
-      </div>
-      <div class="panel source-meta">
-        <div class="panel-title" style="padding:0 0 12px" id="sourceTitle">当前数据源</div>
-        <p id="registryStatus">启动中，正在检查本机扫描结果。</p>
-        <div class="meta-list">
-          <div class="meta-item"><strong id="registryModeLabel">数据模式</strong><span id="registryMode">自动检测</span></div>
-          <div class="meta-item"><strong id="registryCountLabel">能力数量</strong><span id="registryCount">-</span></div>
-          <div class="meta-item"><strong id="registryTimeLabel">扫描时间</strong><span id="registryTime">-</span></div>
-        </div>
+      <div class="panel sidebar-panel">
+        <section class="sidebar-section">
+          <div class="panel-title" id="sceneTitle">场景</div>
+          <div class="scene-list" id="sceneList"></div>
+        </section>
+        <section class="sidebar-section storage">
+          <div class="panel-title" id="scopeTitle">范围说明</div>
+          <p id="scopeText">`全部能力` 会展示本地、远程和共享能力。筛选只改变视图，不会触发任何执行。</p>
+          <div class="storage-grid">
+            <div class="storage-box"><strong id="boxLocalTitle">本地</strong><span id="boxLocalText">本机脚本或工具</span></div>
+            <div class="storage-box"><strong id="boxRemoteTitle">远程</strong><span id="boxRemoteText">API 或托管服务</span></div>
+            <div class="storage-box"><strong id="boxSharedTitle">共享</strong><span id="boxSharedText">两类环境均可用</span></div>
+            <div class="storage-box"><strong id="boxReadonlyTitle">只读</strong><span id="boxReadonlyText">选择能力不执行</span></div>
+          </div>
+        </section>
+        <section class="sidebar-section source-meta">
+          <div class="panel-title" id="sourceTitle">当前数据源</div>
+          <p id="registryStatus">启动中，正在检查本机扫描结果。</p>
+          <div class="meta-list">
+            <div class="meta-item"><strong id="registryModeLabel">数据模式</strong><span id="registryMode">自动检测</span></div>
+            <div class="meta-item"><strong id="registryCountLabel">能力数量</strong><span id="registryCount">-</span></div>
+            <div class="meta-item"><strong id="registryTimeLabel">扫描时间</strong><span id="registryTime">-</span></div>
+          </div>
+        </section>
       </div>
     </aside>
 
@@ -872,7 +887,7 @@
         hintLocal: "",
         hintExample: "",
         statusLocal: "已加载本机扫描结果。打开页面前应先运行扫描。",
-        statusExample: "未发现本机扫描结果，当前展示仓库自带示例库。",
+        statusExample: "当前展示内置示例能力。安装后可切换为本机扫描结果。",
         modeLocal: "本机扫描结果",
         modeExample: "示例库",
         sortLabel: "排序",
@@ -929,7 +944,7 @@
         hintLocal: "",
         hintExample: "",
         statusLocal: "Loaded from the local scanned registry. Scan before using the page.",
-        statusExample: "No local scan result was found. The page is showing the repository example registry.",
+        statusExample: "Showing the built-in example registry. Install locally to switch to your scanned capabilities.",
         modeLocal: "Local scan result",
         modeExample: "Example registry",
         sortLabel: "Sort",
@@ -1195,7 +1210,43 @@
         parent.desc = `父级能力组，已折叠 ${parent.sourceCount} 个子项。搜索子项名称时仍会命中这个父级组。`;
         parent.descEn = `Parent capability group with ${parent.sourceCount} folded child items. Searching child names still returns this parent group.`;
       }
-      return [...passthrough, ...grouped.values()];
+      return mergeRelatedItems([...passthrough, ...grouped.values()]);
+    }
+
+    function mergeRelatedItems(items) {
+      const merged = new Map();
+      for (const item of items) {
+        const key = String(item.name || capabilityName(item)).trim().toLowerCase();
+        if (!merged.has(key)) {
+          merged.set(key, {
+            ...item,
+            childItems: Array.isArray(item.childItems) ? [...item.childItems] : [],
+            availableIn: listUnique([...(item.availableIn || []), ...availableHosts(item)]),
+            tags: listUnique([...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean),
+            sourceCount: Number(item.sourceCount || 1),
+          });
+          continue;
+        }
+        const parent = merged.get(key);
+        parent.availableIn = listUnique([...(parent.availableIn || []), ...(item.availableIn || []), ...availableHosts(item)]);
+        parent.tags = listUnique([...(parent.tags || []), ...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean);
+        parent.sourceCount = Number(parent.sourceCount || 1) + Number(item.sourceCount || 1);
+        parent.childItems = [
+          ...(parent.childItems || []),
+          ...(Array.isArray(item.childItems) && item.childItems.length ? item.childItems : [item])
+        ];
+        parent.requiresSubskills = Boolean(parent.requiresSubskills || item.requiresSubskills || parent.childItems.length > 1);
+        if (String(item.installedAt || "") > String(parent.installedAt || "")) {
+          parent.installedAt = item.installedAt;
+        }
+        parent.desc = parent.childItems.length > 1
+          ? `同名能力已合并 ${parent.childItems.length} 个来源。搜索子项名称时仍会命中这个入口。`
+          : parent.desc;
+        parent.descEn = parent.childItems.length > 1
+          ? `Merged ${parent.childItems.length} sources for the same capability. Searching child names still returns this entry.`
+          : parent.descEn;
+      }
+      return [...merged.values()];
     }
 
     function slugToTitle(value) {
