@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 
 HOST_LABELS = {
     "codex": {"zh": "Codex / CDX", "en": "Codex / CDX"},
@@ -294,6 +294,12 @@ def build_capability(
     needs_subskills = infer_requires_subskills(raw_name, description)
     prompt_zh, prompt_en = build_prompts(display_name, description_zh, description_en, host, source_type, needs_subskills)
     installed_at = datetime.fromtimestamp(source_path.stat().st_mtime, tz=timezone.utc).isoformat()
+    available_in = [host]
+    if source_type == "cli":
+        available_in = ["codex", "hermes", "local-cli"]
+    elif source_type == "template-library":
+        available_in = ["codex", "hermes", "template-library"]
+
     return {
         "name": raw_name,
         "displayName": display_name,
@@ -312,7 +318,7 @@ def build_capability(
         "sourcePath": source_path_str,
         "sourcePathDisplay": source_display,
         "installedAt": installed_at,
-        "availableIn": [host],
+        "availableIn": available_in,
         "requiresSubskills": needs_subskills,
     }
 
@@ -423,15 +429,22 @@ def scan_template_library(home: Path) -> Iterable[dict[str, object]]:
     if not library_root.exists():
         return []
     templates = [candidate for candidate in sorted(library_root.iterdir()) if candidate.is_dir() and not candidate.name.startswith(".")]
-    results = [
-        build_capability(
-            host="template-library",
-            source_type="template-library",
-            source_path=library_root,
-            raw_name="design-md templates",
-            raw_description=f"本地 design-md 模板库，共 {len(templates)} 套模板。可用 `design-md list`、`design-md path <name>` 和 `design-md install <name> <project>` 查看或安装模板。",
-        )
+    capability = build_capability(
+        host="template-library",
+        source_type="template-library",
+        source_path=library_root,
+        raw_name="design-md templates",
+        raw_description=f"本地 design-md 模板库，共 {len(templates)} 套模板。可用 `design-md list`、`design-md path <name>` 和 `design-md install <name> <project>` 查看或安装模板。",
+    )
+    capability["templateItems"] = [
+        {
+            "name": candidate.name,
+            "displayName": slug_to_title(candidate.name),
+            "sourcePathDisplay": str(candidate).replace(str(Path.home()), "~"),
+        }
+        for candidate in templates
     ]
+    results = [capability]
     return results
 
 

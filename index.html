@@ -1140,7 +1140,20 @@
 
     function hostOk(item) {
       if (activeEnv === "all") return true;
-      return availableHosts(item).includes(activeEnv);
+      const hosts = availableHosts(item);
+      const hostGroups = {
+        codex: ["codex", "agents", "local-cli", "template-library", "local-config"],
+        hermes: ["hermes", "agents", "local-cli", "template-library", "local-config"]
+      };
+      return hosts.some(host => (hostGroups[activeEnv] || [activeEnv]).includes(host));
+    }
+
+    function relatedCapabilityKey(item) {
+      const name = String(item.name || "").trim().toLowerCase();
+      if (name === "design-md" || name === "design-md templates") {
+        return "design-md";
+      }
+      return name || String(capabilityName(item)).trim().toLowerCase();
     }
 
     function parentBucket(item) {
@@ -1216,11 +1229,15 @@
     function mergeRelatedItems(items) {
       const merged = new Map();
       for (const item of items) {
-        const key = String(item.name || capabilityName(item)).trim().toLowerCase();
+        const key = relatedCapabilityKey(item);
         if (!merged.has(key)) {
           merged.set(key, {
             ...item,
+            name: key === "design-md" ? key : item.name,
+            displayName: key === "design-md" ? "Design Md" : item.displayName,
+            displayNameEn: key === "design-md" ? "Design Md" : item.displayNameEn,
             childItems: Array.isArray(item.childItems) ? [...item.childItems] : [],
+            templateItems: Array.isArray(item.templateItems) ? [...item.templateItems] : [],
             availableIn: listUnique([...(item.availableIn || []), ...availableHosts(item)]),
             tags: listUnique([...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean),
             sourceCount: Number(item.sourceCount || 1),
@@ -1231,22 +1248,47 @@
         parent.availableIn = listUnique([...(parent.availableIn || []), ...(item.availableIn || []), ...availableHosts(item)]);
         parent.tags = listUnique([...(parent.tags || []), ...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean);
         parent.sourceCount = Number(parent.sourceCount || 1) + Number(item.sourceCount || 1);
+        if (!Array.isArray(parent.childItems) || !parent.childItems.length) {
+          parent.childItems = [sourceSnapshot(parent)];
+        }
         parent.childItems = [
           ...(parent.childItems || []),
-          ...(Array.isArray(item.childItems) && item.childItems.length ? item.childItems : [item])
+          ...(Array.isArray(item.childItems) && item.childItems.length ? item.childItems : [sourceSnapshot(item)])
         ];
+        parent.templateItems = mergeTemplateItems([...(parent.templateItems || []), ...(item.templateItems || [])]);
         parent.requiresSubskills = Boolean(parent.requiresSubskills || item.requiresSubskills || parent.childItems.length > 1);
         if (String(item.installedAt || "") > String(parent.installedAt || "")) {
           parent.installedAt = item.installedAt;
         }
-        parent.desc = parent.childItems.length > 1
+        parent.desc = parent.templateItems && parent.templateItems.length
+          ? `本地 design-md 能力，已合并 skill、CLI 和模板库来源，包含 ${parent.templateItems.length} 套可用设计模板。`
+          : parent.childItems.length > 1
           ? `同名能力已合并 ${parent.childItems.length} 个来源。搜索子项名称时仍会命中这个入口。`
           : parent.desc;
-        parent.descEn = parent.childItems.length > 1
+        parent.descEn = parent.templateItems && parent.templateItems.length
+          ? `Local design-md capability merged from skill, CLI, and template-library sources, with ${parent.templateItems.length} available design templates.`
+          : parent.childItems.length > 1
           ? `Merged ${parent.childItems.length} sources for the same capability. Searching child names still returns this entry.`
           : parent.descEn;
       }
       return [...merged.values()];
+    }
+
+    function sourceSnapshot(item) {
+      const snapshot = { ...item };
+      delete snapshot.childItems;
+      delete snapshot.templateItems;
+      return snapshot;
+    }
+
+    function mergeTemplateItems(items) {
+      const seen = new Set();
+      return items.filter(item => {
+        const key = String(item.name || "").toLowerCase();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).sort((a, b) => String(a.name).localeCompare(String(b.name)));
     }
 
     function slugToTitle(value) {
@@ -1321,7 +1363,7 @@
             <h3>${capabilityName(item)}</h3>
             <div class="skill-id">${item.name}</div>
             <p>${capabilityDesc(item)}</p>
-            <div class="tags">${item.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}${item.sourceCount > 1 ? `<span class="tag">${item.sourceCount} items</span>` : ""}</div>
+            <div class="tags">${item.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}${item.sourceCount > 1 ? `<span class="tag">${item.sourceCount} sources</span>` : ""}${Array.isArray(item.templateItems) && item.templateItems.length ? `<span class="tag">${item.templateItems.length} templates</span>` : ""}</div>
           </div>
           <div class="score">${item.score}</div>
         </article>
@@ -1351,7 +1393,14 @@
           <h3>${t("sourceBlock")}</h3>
           <div class="style-note"><strong>${selected.host || "local"}</strong> · ${selected.sourceType || "capability"}<br>${selected.sourcePathDisplay || selected.sourcePath}</div>
           ${Array.isArray(selected.availableIn) && selected.availableIn.length > 1 ? `<div class="source-list"><div class="source-entry"><strong>${t("sourceHosts")}</strong><br>${selected.availableIn.join(", ")}</div></div>` : ""}
-          ${Array.isArray(selected.childItems) && selected.childItems.length ? `<div class="source-list">${selected.childItems.slice(0, 16).map(child => `<div class="source-entry">${capabilityName(child)} · ${child.name}</div>`).join("")}${selected.childItems.length > 16 ? `<div class="source-entry">+ ${selected.childItems.length - 16} more</div>` : ""}</div>` : ""}
+          ${Array.isArray(selected.childItems) && selected.childItems.length ? `<div class="source-list">${selected.childItems.slice(0, 16).map(child => `<div class="source-entry">${capabilityName(child)} · ${child.name}<br>${child.sourcePathDisplay || child.sourcePath || child.host || ""}</div>`).join("")}${selected.childItems.length > 16 ? `<div class="source-entry">+ ${selected.childItems.length - 16} more sources</div>` : ""}</div>` : ""}
+        </div>
+        ` : ""}
+
+        ${Array.isArray(selected.templateItems) && selected.templateItems.length ? `
+        <div class="block">
+          <h3>${activeLang === "en" ? "Template Library" : "模板清单"}</h3>
+          <div class="source-list">${selected.templateItems.slice(0, 80).map(template => `<div class="source-entry">${template.displayName || template.name} · ${template.name}</div>`).join("")}${selected.templateItems.length > 80 ? `<div class="source-entry">+ ${selected.templateItems.length - 80} more templates</div>` : ""}</div>
         </div>
         ` : ""}
 
