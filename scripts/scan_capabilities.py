@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 HOST_LABELS = {
     "codex": {"zh": "Codex / CDX", "en": "Codex / CDX"},
@@ -34,6 +34,7 @@ HOST_LABELS = {
     "local-cli": {"zh": "本地命令", "en": "Local CLI"},
     "template-library": {"zh": "模板库", "en": "Template Library"},
     "reference": {"zh": "知识参考", "en": "Reference"},
+    "content-source": {"zh": "内容源", "en": "Content Source"},
 }
 
 DAS_CATEGORY_MAP = {
@@ -315,6 +316,8 @@ def infer_env(host: str, source_type: str) -> list[str]:
         return ["remote"]
     if source_type in {"cli", "template-library"}:
         return ["local"]
+    if source_type == "content-source":
+        return ["shared"]
     if host in {"cursor", "claude-code", "github-copilot", "qoder", "trae"}:
         return ["shared"]
     return ["local"]
@@ -331,6 +334,7 @@ def score_for(source_type: str) -> str:
         "cli": "8.8",
         "template-library": "8.7",
         "reference": "8.2",
+        "content-source": "8.6",
     }.get(source_type, "8.0")
 
 
@@ -472,6 +476,11 @@ def default_description(host: str, source_type: str, raw_name: str) -> tuple[str
             f"从安装/使用记录中发现的知识参考 `{raw_name}`，不部署，只作为资料或上下文来源。",
             f"Discovered reference source '{raw_name}' from install or usage records. Use it as knowledge context, not as a deployable tool.",
         )
+    if source_type == "content-source":
+        return (
+            f"从本地目录或迁移记录中发现的内容源 `{raw_name}`，通常是父级能力包，右侧子项才是具体可复制或调用的 agent / alias / 模板。",
+            f"Discovered content source '{raw_name}' from local directories or migration records. It is usually a parent package; inspect child items for concrete agents, aliases, or templates.",
+        )
     return (
         f"从 {host_zh} 发现的能力项。",
         f"Discovered capability from {host_en}.",
@@ -524,6 +533,8 @@ def infer_install_kind(host: str, source_type: str, source_path: Path, metadata:
     path = str(source_path)
     if source_type == "reference":
         return "reference", "知识参考"
+    if source_type == "content-source":
+        return "content-source", "内容源"
     if source_type == "template-library":
         return "template-library", "模板库"
     if source_type == "cli":
@@ -576,7 +587,20 @@ def build_prompts(display_name: str, description_zh: str, description_en: str, h
     host_zh = host_label(host, "zh")
     host_en = host_label(host, "en")
     external_hosts = {"claude-code", "github-copilot", "cursor", "trae", "qoder", "qwen", "hermes", "workbuddy", "codewhale", "opencode"}
-    if host in external_hosts or source_type in {"plugin", "mcp", "rule"}:
+    if source_type == "content-source":
+        zh = [
+            f"使用 {display_name} 时，先在右侧子项中选择具体 agent / alias / 模板。",
+            f"用途：{description_zh}",
+            "人类使用方式：复制目标子项的提示词或按本地 README 的安装命令接入对应宿主工具；不要把父级包当作一个可直接执行的单项 skill。",
+            "路由要求：先说明选中的子项、适用宿主和交付物，再交给 Codex / Hermes / Claude Code / Cursor 等工具执行。",
+        ]
+        en = [
+            f"When using {display_name}, first choose a concrete child agent, alias, or template from the detail panel.",
+            f"Purpose: {description_en}",
+            "Human usage: copy the target child prompt or follow the local README install command for the matching host. Do not treat the parent package as a single executable skill.",
+            "Routing requirement: state the chosen child item, host, and expected deliverable before handing it to Codex, Hermes, Claude Code, Cursor, or another tool.",
+        ]
+    elif host in external_hosts or source_type in {"plugin", "mcp", "rule"}:
         zh = [
             f"先检查 {display_name} 是否应该在 {host_zh} 中使用。",
             f"用途：{description_zh}",
@@ -591,21 +615,214 @@ def build_prompts(display_name: str, description_zh: str, description_en: str, h
         ]
     else:
         zh = [
-            f"先检查并调用 {display_name}。",
+            f"使用 {display_name} 前，先确认当前任务是否匹配它的用途。",
             f"用途：{description_zh}",
             f"来源：{host_zh} / {source_type}",
-            "要求：先说明为什么选它，再决定是否要组合其他 skill / plugin / MCP / agent。",
+            "人类使用方式：在对应宿主工具中调用；如果是本地 skill，就让执行器按该 skill 的 SKILL.md 规则工作。",
         ]
         en = [
-            f"Check and use {display_name} first.",
+            f"Before using {display_name}, confirm the current task matches its purpose.",
             f"Purpose: {description_en}",
             f"Source: {host_en} / {source_type}",
-            "Requirement: explain why it was selected before combining it with other skills, plugins, MCP services, or agents.",
+            "Human usage: invoke it in the matching host tool. If it is a local skill, let the runtime follow that skill's SKILL.md instructions.",
         ]
     if needs_subskills:
         zh.append("附加说明：这更像父级能力或工具箱。执行前先判断是否需要继续细分到子 skill / 子规则 / 子代理。")
         en.append("Extra note: this looks like a parent capability or toolkit. Check whether you should route further into child skills, rules, or sub-agents before execution.")
     return "\n".join(zh), "\n".join(en)
+
+
+def child_category_from_path(path: Path) -> str:
+    parts = [part.lower() for part in path.parts]
+    if any(part in {"design", "frontend", "ui"} for part in parts):
+        return "UI / 前端"
+    if any(part in {"engineering", "testing", "security"} for part in parts):
+        return "代码 / 后端"
+    if any(part in {"marketing", "paid-media", "sales", "finance", "product", "academic", "legal", "hr"} for part in parts):
+        return "知识 / 记忆"
+    if any(part in {"support", "project-management", "specialized", "spatial-computing"} for part in parts):
+        return "网页 / 自动化"
+    if any(part in {"game-development", "examples"} for part in parts):
+        return "视频 / 内容"
+    return "知识 / 记忆"
+
+
+def content_child_item(path: Path, root: Path) -> dict[str, object] | None:
+    allowed_agent_dirs = {
+        "academic", "design", "engineering", "finance", "game-development",
+        "gis", "hr", "legal", "marketing", "paid-media", "product",
+        "project-management", "sales", "security", "spatial-computing",
+        "specialized", "supply-chain", "support", "testing",
+    }
+    rel = path.relative_to(root)
+    if len(rel.parts) < 2 or rel.parts[0] not in allowed_agent_dirs:
+        return None
+    if path.name in {"README.md", "README.zh-TW.md", "AGENT-LIST.md", "UPSTREAM.md", "CONTRIBUTING.md"}:
+        return None
+    if any(part in {"scripts", "assets", ".git", ".github", "node_modules", "integrations", "examples"} for part in path.parts):
+        return None
+    text = safe_read(path, limit=5000)
+    name, description = summarize_text(text)
+    raw_name = name or path.stem
+    category = child_category_from_path(rel)
+    desc = description or summarize_doc_text(text) or default_description("content-source", "content-source", raw_name)[0]
+    return {
+        "name": path.stem,
+        "displayName": slug_to_title(raw_name),
+        "displayNameEn": english_title(raw_name),
+        "cat": category,
+        "desc": desc,
+        "sourcePath": str(path),
+        "sourcePathDisplay": str(path).replace(str(Path.home()), "~"),
+        "folder": rel.parts[0] if len(rel.parts) > 1 else "",
+        "searchText": " ".join([path.stem, raw_name, desc, str(rel)]),
+    }
+
+
+def find_named_dirs(search_root: Path, names: set[str], *, max_depth: int = 8, max_matches: int = 12) -> list[Path]:
+    if not search_root.exists() or not search_root.is_dir():
+        return []
+    skip_names = {".git", "node_modules", "Library", "Applications", "Movies", "Music", "Pictures"}
+    matches: list[Path] = []
+    queue: list[tuple[Path, int]] = [(search_root, 0)]
+    seen: set[Path] = set()
+    while queue and len(matches) < max_matches:
+        current, depth = queue.pop(0)
+        if current in seen:
+            continue
+        seen.add(current)
+        if current.name in names and current.is_dir():
+            matches.append(current)
+            continue
+        if depth >= max_depth or current.name in skip_names or current.name.startswith("."):
+            continue
+        try:
+            children = sorted(
+                [child for child in current.iterdir() if child.is_dir()],
+                key=lambda child: child.name.lower(),
+            )
+        except OSError:
+            continue
+        for child in children:
+            if child.name in skip_names:
+                continue
+            queue.append((child, depth + 1))
+    return matches
+
+
+def discover_content_source_roots(home: Path, record: dict[str, object]) -> list[Path]:
+    names_value = record.get("discoveryNames") or []
+    if isinstance(names_value, str):
+        names_value = [names_value]
+    names = {str(name) for name in names_value if name}
+    if not names:
+        return []
+    roots: list[Path] = []
+    search_roots = [
+        home / "Documents" / "Codex",
+        home / "Documents",
+        home / ".agents",
+        home / ".codex",
+        home / ".hermes",
+    ]
+    for search_root in search_roots:
+        roots.extend(find_named_dirs(search_root, names))
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        key = str(root.resolve())
+        if key not in seen:
+            seen.add(key)
+            unique.append(root)
+    return unique
+
+
+def scan_content_sources(home: Path, overrides: dict[str, object]) -> Iterable[dict[str, object]]:
+    records = overrides.get("contentSourceRecords", [])
+    if not isinstance(records, list):
+        return []
+    results: list[dict[str, object]] = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        name = str(record.get("name") or "").strip()
+        if not name:
+            continue
+        root_values = record.get("roots") or record.get("paths") or []
+        if isinstance(root_values, str):
+            root_values = [root_values]
+        roots = [Path(str(value).replace("~", str(home))).expanduser() for value in root_values if value]
+        existing_roots = [root for root in roots if root.exists() and root.is_dir()]
+        if not existing_roots:
+            existing_roots = discover_content_source_roots(home, record)
+        exact_roots = [root for root in existing_roots if root.name == name]
+        if exact_roots:
+            existing_roots = exact_roots
+        children: list[dict[str, object]] = []
+        local_docs: list[Path] = []
+        doc_texts: list[str] = []
+        for root in existing_roots:
+            local_docs.extend(find_local_docs(root))
+            doc_texts.extend(safe_read(path, limit=12000) for path in find_local_docs(root))
+            for path in sorted(root.rglob("*.md")):
+                child = content_child_item(path, root)
+                if child:
+                    children.append(child)
+        doc_summary = summarize_doc_text("\n\n".join(doc_texts)) if doc_texts else None
+        display_name = str(record.get("displayName") or slug_to_title(name))
+        desc_zh = str(record.get("desc") or doc_summary or default_description("content-source", "content-source", name)[0])
+        desc_en = str(record.get("descEn") or default_description("content-source", "content-source", name)[1])
+        category = str(record.get("cat") or "网页 / 自动化")
+        repo_url = str(record.get("repoUrl") or "")
+        installed_at = str(record.get("installedAt") or "")
+        if not installed_at and existing_roots:
+            installed_at = datetime.fromtimestamp(max(root.stat().st_mtime for root in existing_roots), tz=timezone.utc).isoformat()
+        if not installed_at:
+            installed_at = datetime.now(timezone.utc).isoformat()
+        available_in = record.get("availableIn")
+        if not isinstance(available_in, list):
+            available_in = ["codex", "hermes", "content-source"]
+        source_path = str(existing_roots[0]) if existing_roots else str(record.get("evidence") or "capability-overrides.json")
+        source_display = source_path.replace(str(home), "~")
+        child_count = len(children) or int(record.get("childCount") or 0)
+        prompt_zh, prompt_en = build_prompts(display_name, desc_zh, desc_en, "content-source", "content-source", True)
+        child_search = " ".join(str(child.get("searchText", "")) for child in children)
+        scene_tags = list(dict.fromkeys([category, "内容源", "父级能力", "agent", "alias", name, *(record.get("sceneTags") or [])]))
+        results.append({
+            "name": name,
+            "displayName": display_name,
+            "displayNameEn": str(record.get("displayNameEn") or display_name),
+            "cat": category,
+            "env": ["shared"],
+            "icon": icon_for(display_name),
+            "score": score_for("content-source"),
+            "desc": desc_zh if child_count == 0 else f"{desc_zh} 已索引 {child_count} 个子项，右侧可查看子 agent / alias / 模板。",
+            "descEn": desc_en if child_count == 0 else f"{desc_en} Indexed {child_count} child items; inspect the detail panel for agents, aliases, or templates.",
+            "tags": list(dict.fromkeys(["content-source", "parent", name, *scene_tags[:8]])),
+            "prompt": prompt_zh,
+            "promptEn": prompt_en,
+            "sourceType": "content-source",
+            "host": "content-source",
+            "sourcePath": source_path,
+            "sourcePathDisplay": source_display,
+            "installedAt": installed_at,
+            "availableIn": available_in,
+            "requiresSubskills": True,
+            "installKind": "content-source",
+            "installKindLabel": "内容源",
+            "sceneTags": scene_tags,
+            "repoUrl": repo_url,
+            "metadataCategory": str(record.get("metadataCategory") or ""),
+            "installEvidence": str(record.get("evidence") or ""),
+            "categorySource": "content-source-manifest",
+            "descSource": "local-readme" if doc_summary else "content-source-manifest",
+            "localDocs": [str(path) for path in local_docs],
+            "localDocDisplays": [str(path).replace(str(home), "~") for path in local_docs],
+            "childItems": children,
+            "childCount": child_count,
+            "searchText": " ".join([name, display_name, desc_zh, desc_en, repo_url, child_search, str(record.get("evidence") or "")]),
+        })
+    return results
 
 
 def build_capability(
@@ -1094,6 +1311,7 @@ def main() -> int:
     capabilities.extend(scan_single_files(project_root, overrides))
     capabilities.extend(scan_cli_tools(home, overrides))
     capabilities.extend(scan_template_library(home, overrides))
+    capabilities.extend(scan_content_sources(home, overrides))
     capabilities.extend(scan_reference_records(home, overrides))
 
     deduped = unique_capabilities(capabilities)

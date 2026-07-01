@@ -1,5 +1,9 @@
 {
   "categoryOverrides": {
+    "agency-agents-zh": {
+      "cat": "网页 / 自动化",
+      "reason": "Parent AI-agent package and alias/content source, not a single SKILL.md item."
+    },
     "gsap-skills": {
       "cat": "UI / 前端",
       "reason": "GSAP/GreenSock front-end motion and animation skill suite."
@@ -21,6 +25,22 @@
       "reason": "Local UI/design template library."
     }
   },
+  "contentSourceRecords": [
+    {
+      "name": "agency-agents-zh",
+      "displayName": "Agency Agents Zh",
+      "displayNameEn": "Agency Agents Zh",
+      "cat": "网页 / 自动化",
+      "repoUrl": "https://github.com/jnMetaCode/agency-agents-zh",
+      "installedAt": "2026-06-21T00:00:00+08:00",
+      "availableIn": ["codex", "hermes", "claude-code", "cursor", "github-copilot", "content-source"],
+      "discoveryNames": ["agency-agents-zh", "agency-agents"],
+      "desc": "agency-agents 中文内容源与智能体能力包，包含跨工程、设计、营销、产品、安全、测试等部门的 AI 专家角色。它不是单个可执行 skill，使用时应先选择右侧具体 agent / alias，再按 README 或安装脚本接入目标宿主工具。",
+      "descEn": "Chinese agency-agents content source and agent package covering engineering, design, marketing, product, security, testing, and more. It is not a single executable skill; choose a concrete child agent or alias first, then follow the README or install script for the target host.",
+      "evidence": "thread 019eea88-df56-73d1-ba89-6e113e0d2665; local README says 266 agents and 18 supported tools",
+      "sceneTags": ["agent package", "alias", "multi-agent", "中文内容源"]
+    }
+  ],
   "referenceRecords": [
     {
       "name": "easy-vibe",

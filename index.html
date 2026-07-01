@@ -1151,7 +1151,7 @@
     function sceneMatches(item, label) {
       if (label === "全部") return true;
       if (label === "原生自带") return installKind(item) === "native";
-      if (label === "后装能力") return ["user-installed", "local-tool", "plugin", "template-library"].includes(installKind(item));
+      if (label === "后装能力") return ["user-installed", "local-tool", "plugin", "template-library", "content-source"].includes(installKind(item));
       if (label === "知识参考") return installKind(item) === "reference" || normalizeSceneLabel(item) === "知识 / 记忆";
       return normalizeSceneLabel(item) === label;
     }
@@ -1411,7 +1411,7 @@
             <h3>${capabilityName(item)}</h3>
             <div class="skill-id">${item.name}</div>
             <p>${capabilityDesc(item)}</p>
-            <div class="tags">${cardTags.map(tag => `<span class="tag">${tag}</span>`).join("")}${item.sourceCount > 1 ? `<span class="tag">${item.sourceCount} sources</span>` : ""}${Array.isArray(item.templateItems) && item.templateItems.length ? `<span class="tag">${item.templateItems.length} templates</span>` : ""}</div>
+            <div class="tags">${cardTags.map(tag => `<span class="tag">${tag}</span>`).join("")}${item.sourceCount > 1 ? `<span class="tag">${item.sourceCount} sources</span>` : ""}${Number(item.childCount || 0) > 0 ? `<span class="tag">${item.childCount} items</span>` : ""}${Array.isArray(item.templateItems) && item.templateItems.length ? `<span class="tag">${item.templateItems.length} templates</span>` : ""}</div>
           </div>
           <div class="score">${item.score}</div>
         </article>
@@ -1443,7 +1443,7 @@
           ${Array.isArray(selected.availableIn) && selected.availableIn.length > 1 ? `<div class="source-list"><div class="source-entry"><strong>${t("sourceHosts")}</strong><br>${selected.availableIn.join(", ")}</div></div>` : ""}
           ${Array.isArray(selected.localDocDisplays) && selected.localDocDisplays.length ? `<div class="source-list"><div class="source-entry"><strong>${activeLang === "en" ? "Local docs read" : "已读取本地说明"}</strong><br>${selected.localDocDisplays.slice(0, 8).join("<br>")}${selected.localDocDisplays.length > 8 ? `<br>+ ${selected.localDocDisplays.length - 8} more docs` : ""}</div></div>` : ""}
           ${(selected.categorySource || selected.descSource) ? `<div class="source-list"><div class="source-entry"><strong>${activeLang === "en" ? "Evidence" : "判断依据"}</strong><br>category: ${selected.categorySource || "-"}<br>description: ${selected.descSource || "-"}</div></div>` : ""}
-          ${Array.isArray(selected.childItems) && selected.childItems.length ? `<div class="source-list">${selected.childItems.slice(0, 16).map(child => `<div class="source-entry">${capabilityName(child)} · ${child.name}<br>${child.sourcePathDisplay || child.sourcePath || child.host || ""}</div>`).join("")}${selected.childItems.length > 16 ? `<div class="source-entry">+ ${selected.childItems.length - 16} more sources</div>` : ""}</div>` : ""}
+          ${Array.isArray(selected.childItems) && selected.childItems.length ? `<div class="source-list">${selected.childItems.slice(0, 80).map(child => `<div class="source-entry"><strong>${capabilityName(child)}</strong> · ${child.name}${child.cat ? ` · ${child.cat}` : ""}<br>${child.desc || ""}<br>${child.sourcePathDisplay || child.sourcePath || child.host || ""}</div>`).join("")}${selected.childItems.length > 80 ? `<div class="source-entry">+ ${selected.childItems.length - 80} more items</div>` : ""}</div>` : ""}
         </div>
         ` : ""}
 
