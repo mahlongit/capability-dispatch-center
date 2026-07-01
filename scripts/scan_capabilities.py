@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-VERSION = "0.2.2"
+VERSION = "0.2.3"
 
 HOST_LABELS = {
     "codex": {"zh": "Codex / CDX", "en": "Codex / CDX"},
@@ -33,6 +33,26 @@ HOST_LABELS = {
     "project": {"zh": "当前项目", "en": "Current project"},
     "local-cli": {"zh": "本地命令", "en": "Local CLI"},
     "template-library": {"zh": "模板库", "en": "Template Library"},
+    "reference": {"zh": "知识参考", "en": "Reference"},
+}
+
+CATEGORY_OVERRIDES = {
+    "gsap-skills": "UI / 前端",
+    "huashu-nuwa": "网页 / 自动化",
+    "nuwaskill": "网页 / 自动化",
+    "easy-vibe": "知识 / 记忆",
+    "design-md": "UI / 前端",
+    "design-md-templates": "UI / 前端",
+}
+
+DAS_CATEGORY_MAP = {
+    "motion-animation": "UI / 前端",
+    "design": "UI / 前端",
+    "frontend": "UI / 前端",
+    "ui": "UI / 前端",
+    "knowledge": "知识 / 记忆",
+    "docs": "知识 / 记忆",
+    "tutorial": "知识 / 记忆",
 }
 
 
@@ -68,17 +88,119 @@ def slug_to_title(value: str) -> str:
     return " ".join(token.capitalize() for token in cleaned.split())
 
 
-def infer_category(text: str, *, raw_name: str = "", source_type: str = "") -> str:
+def clean_scalar(value: str) -> object:
+    stripped = value.strip().strip('"').strip("'")
+    if stripped.lower() == "true":
+        return True
+    if stripped.lower() == "false":
+        return False
+    if stripped.startswith("[") and stripped.endswith("]"):
+        return [
+            item.strip().strip('"').strip("'")
+            for item in stripped[1:-1].split(",")
+            if item.strip()
+        ]
+    return stripped
+
+
+def parse_frontmatter(text: str) -> dict[str, object]:
+    if not text.startswith("---\n"):
+        return {}
+    _, _, remainder = text.partition("\n")
+    frontmatter, marker, _ = remainder.partition("\n---")
+    if not marker:
+        return {}
+
+    data: dict[str, object] = {}
+    lines = frontmatter.splitlines()
+    index = 0
+    while index < len(lines):
+        raw_line = lines[index]
+        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+            index += 1
+            continue
+        indent = len(raw_line) - len(raw_line.lstrip(" "))
+        line = raw_line.strip()
+        if indent != 0 or ":" not in line:
+            index += 1
+            continue
+        key, _, value = line.partition(":")
+        key = key.strip()
+        value = value.strip()
+
+        if value in {"|", ">"}:
+            block: list[str] = []
+            index += 1
+            while index < len(lines):
+                next_raw = lines[index]
+                next_indent = len(next_raw) - len(next_raw.lstrip(" "))
+                if next_raw.strip() and next_indent == 0 and ":" in next_raw:
+                    break
+                block.append(next_raw[2:] if next_indent >= 2 else next_raw.strip())
+                index += 1
+            data[key] = "\n".join(block).strip()
+            continue
+
+        if value == "":
+            nested: dict[str, object] = {}
+            values: list[object] = []
+            index += 1
+            while index < len(lines):
+                next_raw = lines[index]
+                next_indent = len(next_raw) - len(next_raw.lstrip(" "))
+                next_line = next_raw.strip()
+                if next_line and next_indent == 0 and ":" in next_line:
+                    break
+                if not next_line:
+                    index += 1
+                    continue
+                if next_line.startswith("- "):
+                    values.append(clean_scalar(next_line[2:]))
+                elif ":" in next_line:
+                    nested_key, _, nested_value = next_line.partition(":")
+                    nested[nested_key.strip()] = clean_scalar(nested_value)
+                index += 1
+            if values:
+                data[key] = values
+            for nested_key, nested_value in nested.items():
+                data[f"{key}.{nested_key}"] = nested_value
+            continue
+
+        data[key] = clean_scalar(value)
+        index += 1
+    return data
+
+
+def metadata_text(metadata: dict[str, object]) -> str:
+    values: list[str] = []
+    for value in metadata.values():
+        if isinstance(value, list):
+            values.extend(str(item) for item in value)
+        else:
+            values.append(str(value))
+    return " ".join(values)
+
+
+def infer_category(text: str, *, raw_name: str = "", source_type: str = "", metadata: dict[str, object] | None = None) -> str:
     value = text.lower()
     name = raw_name.lower()
+    metadata = metadata or {}
+    normalized_name = re.sub(r"[^a-z0-9]+", "-", name).strip("-")
+    if normalized_name in CATEGORY_OVERRIDES:
+        return CATEGORY_OVERRIDES[normalized_name]
+    das_category = str(metadata.get("das.category", "")).lower()
+    if das_category in DAS_CATEGORY_MAP:
+        return DAS_CATEGORY_MAP[das_category]
     ui_terms = (
         "ui", "ux", "frontend", "front-end", "front end", "interface", "component",
         "visual", "css", "accessibility", "brand", "figma", "design-system",
-        "wireframe", "layout", "motion", "typography",
+        "wireframe", "layout", "motion", "typography", "gsap", "greensock",
+        "scrolltrigger", "usegsap", "timeline", "animation",
     )
     ui_name_terms = (
         "ui", "ux", "frontend", "front-end", "interface", "visual", "design",
         "figma", "wireframe", "layout", "component", "motion", "brand",
+        "gsap", "greensock", "scrolltrigger",
     )
     deploy_terms = (
         "cloudflare", "deploy", "deployment", "release", "vercel", "netlify",
@@ -89,16 +211,20 @@ def infer_category(text: str, *, raw_name: str = "", source_type: str = "") -> s
         "cloudflare", "deploy", "deployment", "release", "wrangler", "vercel",
         "netlify", "devops", "sre", "infrastructure", "tunnel",
     )
-    if any(re.search(rf"(^|[-_\s/]){re.escape(token)}($|[-_\s/])", name) for token in deploy_name_terms):
-        return "部署"
     if source_type == "template-library":
         return "UI / 前端"
     if source_type == "cli" and "design-md" in name:
         return "UI / 前端"
+    if any(token in value for token in ("教程", "文档", "知识参考", "knowledge", "docs", "documentation", "tutorial", "reference", "easy-vibe", "datawhale")):
+        return "知识 / 记忆"
+    if any(token in value for token in ("女娲", "造skill", "蒸馏", "人物skill", "deep research", "skill generation", "agent reach")):
+        return "网页 / 自动化"
     if "design" in name:
         return "UI / 前端"
     if any(re.search(rf"(^|[-_\s/]){re.escape(token)}($|[-_\s/])", name) for token in ui_name_terms):
         return "UI / 前端"
+    if any(re.search(rf"(^|[-_\s/]){re.escape(token)}($|[-_\s/])", name) for token in deploy_name_terms):
+        return "部署"
     if any(token in value for token in deploy_terms):
         return "部署"
     if any(token in value for token in ui_terms):
@@ -133,6 +259,7 @@ def score_for(source_type: str) -> str:
         "extension": "8.0",
         "cli": "8.8",
         "template-library": "8.7",
+        "reference": "8.2",
     }.get(source_type, "8.0")
 
 
@@ -152,30 +279,16 @@ def safe_read(path: Path, limit: int = 6000) -> str:
         return ""
 
 
-def parse_frontmatter(text: str) -> dict[str, str]:
-    if not text.startswith("---\n"):
-        return {}
-    _, _, remainder = text.partition("\n")
-    frontmatter, marker, _ = remainder.partition("\n---")
-    if not marker:
-        return {}
-    data: dict[str, str] = {}
-    for raw_line in frontmatter.splitlines():
-        line = raw_line.strip()
-        if not line or ":" not in line:
-            continue
-        key, _, value = line.partition(":")
-        data[key.strip()] = value.strip().strip('"').strip("'")
-    return data
-
-
 def summarize_text(text: str) -> tuple[str | None, str | None]:
     frontmatter = parse_frontmatter(text)
     name = frontmatter.get("name")
     description = frontmatter.get("description")
     heading_match = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
     paragraph_match = re.search(r"\n\n([^\n#][^\n]+)", text)
-    return name or (heading_match.group(1).strip() if heading_match else None), description or (paragraph_match.group(1).strip() if paragraph_match else None)
+    return (
+        str(name) if name else (heading_match.group(1).strip() if heading_match else None),
+        str(description) if description else (paragraph_match.group(1).strip() if paragraph_match else None),
+    )
 
 
 def host_label(host: str, lang: str) -> str:
@@ -220,6 +333,11 @@ def default_description(host: str, source_type: str, raw_name: str) -> tuple[str
             f"从本地模板库发现的能力 `{raw_name}`，适合在 UI/设计任务里作为风格或结构参考。",
             f"Discovered template-library capability '{raw_name}'. Best used as a UI or design reference.",
         )
+    if source_type == "reference":
+        return (
+            f"从安装/使用记录中发现的知识参考 `{raw_name}`，不部署，只作为资料或上下文来源。",
+            f"Discovered reference source '{raw_name}' from install or usage records. Use it as knowledge context, not as a deployable tool.",
+        )
     return (
         f"从 {host_zh} 发现的能力项。",
         f"Discovered capability from {host_en}.",
@@ -230,6 +348,73 @@ def infer_requires_subskills(raw_name: str, description: str) -> bool:
     value = " ".join([raw_name, description]).lower()
     markers = ("suite", "toolkit", "collection", "workflow", "orchestrator", "framework", "stack", "multi-agent", "agency", "platform", "templates", "library")
     return any(marker in value for marker in markers)
+
+
+def first_string(value: object) -> str:
+    if isinstance(value, list):
+        return str(value[0]) if value else ""
+    return str(value) if value is not None else ""
+
+
+def infer_repo_url(metadata: dict[str, object], text: str) -> str | None:
+    for key in ("das.upstream", "upstream", "repo", "repository", "homepage", "url"):
+        value = first_string(metadata.get(key)).strip()
+        if value.startswith("https://github.com/"):
+            return value.rstrip(".,)")
+    match = re.search(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", text)
+    return match.group(0).rstrip(".,)") if match else None
+
+
+def infer_install_kind(host: str, source_type: str, source_path: Path, metadata: dict[str, object]) -> tuple[str, str]:
+    path = str(source_path)
+    if source_type == "reference":
+        return "reference", "知识参考"
+    if source_type == "template-library":
+        return "template-library", "模板库"
+    if source_type == "cli":
+        return "local-tool", "本地命令"
+    if source_type in {"plugin", "mcp", "extension"}:
+        return source_type, {"plugin": "插件", "mcp": "MCP", "extension": "扩展"}.get(source_type, source_type)
+    if "/.codex/skills/.system/" in path or "/plugins/cache/openai-" in path:
+        return "native", "原生自带"
+    if host in {"codex", "agents", "hermes", "workbuddy", "codewhale"} and source_type == "skill":
+        return "user-installed", "后装能力"
+    if metadata.get("das.upstream") or metadata.get("das.category"):
+        return "user-installed", "后装能力"
+    return "local", "本机发现"
+
+
+def infer_scene_tags(
+    *,
+    raw_name: str,
+    category: str,
+    host: str,
+    source_type: str,
+    metadata: dict[str, object],
+    description: str,
+    repo_url: str | None,
+    install_label: str,
+) -> list[str]:
+    text = " ".join([raw_name, description, metadata_text(metadata), repo_url or ""]).lower()
+    tags = [category, install_label, host, source_type]
+    das_category = first_string(metadata.get("das.category"))
+    if das_category:
+        tags.append(das_category)
+    if "gsap" in text or "greensock" in text:
+        tags.extend(["GSAP", "GreenSock", "动效", "前端动画"])
+    if "scrolltrigger" in text:
+        tags.append("ScrollTrigger")
+    if "女娲" in text or "huashu" in text or "nuwa" in text:
+        tags.extend(["女娲", "能力生成", "深度调研", "内容生产"])
+    if "easy-vibe" in text or "datawhale" in text:
+        tags.extend(["教程", "文档", "知识参考", "Datawhale"])
+    if "design-md" in text:
+        tags.extend(["design-md", "设计模板"])
+    if "mcp" in text:
+        tags.append("MCP")
+    if "agent" in text:
+        tags.append("agent")
+    return list(dict.fromkeys(str(tag) for tag in tags if tag))
 
 
 def build_prompts(display_name: str, description_zh: str, description_en: str, host: str, source_type: str, needs_subskills: bool) -> tuple[str, str]:
@@ -276,6 +461,8 @@ def build_capability(
     raw_name: str,
     raw_description: str | None,
 ) -> dict[str, object]:
+    source_text = safe_read(source_path)
+    metadata = parse_frontmatter(source_text)
     display_name = slug_to_title(raw_name)
     display_name_en = english_title(raw_name)
     default_zh, default_en = default_description(host, source_type, raw_name)
@@ -283,19 +470,34 @@ def build_capability(
     description_zh = raw_description if raw_description and re.search(r"[\u4e00-\u9fff]", raw_description) else default_zh
     description_en = raw_description if raw_description and not re.search(r"[\u4e00-\u9fff]", raw_description) else default_en
     category = infer_category(
-        " ".join([raw_name, display_name, description, source_type]),
+        " ".join([raw_name, display_name, description, source_type, metadata_text(metadata)]),
         raw_name=raw_name,
         source_type=source_type,
+        metadata=metadata,
     )
     env = infer_env(host, source_type)
-    tags = [host, source_type, source_path.parent.name or source_path.name]
+    repo_url = infer_repo_url(metadata, source_text)
+    install_kind, install_label = infer_install_kind(host, source_type, source_path, metadata)
+    scene_tags = infer_scene_tags(
+        raw_name=raw_name,
+        category=category,
+        host=host,
+        source_type=source_type,
+        metadata=metadata,
+        description=description,
+        repo_url=repo_url,
+        install_label=install_label,
+    )
+    tags = list(dict.fromkeys([host, source_type, source_path.parent.name or source_path.name, *scene_tags[:8]]))
     source_path_str = str(source_path)
     source_display = source_path_str.replace(str(Path.home()), "~")
     needs_subskills = infer_requires_subskills(raw_name, description)
     prompt_zh, prompt_en = build_prompts(display_name, description_zh, description_en, host, source_type, needs_subskills)
     installed_at = datetime.fromtimestamp(source_path.stat().st_mtime, tz=timezone.utc).isoformat()
     available_in = [host]
-    if source_type == "cli":
+    if host == "agents" and source_type == "skill":
+        available_in = ["codex", "hermes", "agents"]
+    elif source_type == "cli":
         available_in = ["codex", "hermes", "local-cli"]
     elif source_type == "template-library":
         available_in = ["codex", "hermes", "template-library"]
@@ -320,6 +522,11 @@ def build_capability(
         "installedAt": installed_at,
         "availableIn": available_in,
         "requiresSubskills": needs_subskills,
+        "installKind": install_kind,
+        "installKindLabel": install_label,
+        "sceneTags": scene_tags,
+        "repoUrl": repo_url,
+        "metadataCategory": first_string(metadata.get("das.category")),
     }
 
 
@@ -448,6 +655,73 @@ def scan_template_library(home: Path) -> Iterable[dict[str, object]]:
     return results
 
 
+def reference_capability(
+    *,
+    name: str,
+    display_name: str,
+    description_zh: str,
+    description_en: str,
+    category: str,
+    repo_url: str,
+    installed_at: str,
+    evidence: str,
+) -> dict[str, object]:
+    prompt_zh, prompt_en = build_prompts(display_name, description_zh, description_en, "reference", "reference", False)
+    scene_tags = infer_scene_tags(
+        raw_name=name,
+        category=category,
+        host="reference",
+        source_type="reference",
+        metadata={"das.upstream": repo_url, "das.category": "knowledge"},
+        description=description_zh,
+        repo_url=repo_url,
+        install_label="知识参考",
+    )
+    return {
+        "name": name,
+        "displayName": display_name,
+        "displayNameEn": display_name,
+        "cat": category,
+        "env": ["shared"],
+        "icon": icon_for(display_name),
+        "score": score_for("reference"),
+        "desc": description_zh,
+        "descEn": description_en,
+        "tags": list(dict.fromkeys(["reference", "knowledge", *scene_tags[:8]])),
+        "prompt": prompt_zh,
+        "promptEn": prompt_en,
+        "sourceType": "reference",
+        "host": "reference",
+        "sourcePath": evidence,
+        "sourcePathDisplay": evidence,
+        "installedAt": installed_at,
+        "availableIn": ["codex", "hermes", "reference"],
+        "requiresSubskills": False,
+        "installKind": "reference",
+        "installKindLabel": "知识参考",
+        "sceneTags": scene_tags,
+        "repoUrl": repo_url,
+        "metadataCategory": "knowledge",
+        "installEvidence": evidence,
+    }
+
+
+def scan_reference_records(home: Path) -> Iterable[dict[str, object]]:
+    del home
+    return [
+        reference_capability(
+            name="easy-vibe",
+            display_name="Easy Vibe",
+            description_zh="DatawhaleChina easy-vibe 教程/文档仓库；不部署，只作为知识参考源，可供 Codex 和 Hermes 在任务中引用。",
+            description_en="DatawhaleChina easy-vibe tutorial and documentation repository. Use it as a knowledge reference for Codex and Hermes, not as a deployable tool.",
+            category="知识 / 记忆",
+            repo_url="https://github.com/datawhalechina/easy-vibe",
+            installed_at="2026-06-30T00:00:00+08:00",
+            evidence="thread:安装并使用能力路由; user-reported 2026-06-30 install/reference",
+        )
+    ]
+
+
 def scan_mcp_configs(search_roots: list[Path]) -> Iterable[dict[str, object]]:
     results = []
     seen: set[str] = set()
@@ -536,13 +810,22 @@ def unique_capabilities(items: Iterable[dict[str, object]]) -> list[dict[str, ob
             continue
         merged = grouped[key]
         merged["sourceCount"] = int(merged.get("sourceCount", 1)) + 1
-        merged["availableIn"] = list(dict.fromkeys(list(merged.get("availableIn", [])) + [item["host"]]))
+        merged["availableIn"] = list(dict.fromkeys(list(merged.get("availableIn", [])) + list(item.get("availableIn", [item["host"]]))))
         merged["sourcePaths"] = list(dict.fromkeys(list(merged.get("sourcePaths", [])) + [item["sourcePath"]]))
         merged["sourcePathDisplays"] = list(dict.fromkeys(list(merged.get("sourcePathDisplays", [])) + [item["sourcePathDisplay"]]))
+        merged["tags"] = list(dict.fromkeys(list(merged.get("tags", [])) + list(item.get("tags", []))))
+        merged["sceneTags"] = list(dict.fromkeys(list(merged.get("sceneTags", [])) + list(item.get("sceneTags", []))))
         if str(item.get("installedAt", "")) > str(merged.get("installedAt", "")):
             merged["installedAt"] = item["installedAt"]
             merged["sourcePath"] = item["sourcePath"]
             merged["sourcePathDisplay"] = item["sourcePathDisplay"]
+            merged["installKind"] = item.get("installKind", merged.get("installKind"))
+            merged["installKindLabel"] = item.get("installKindLabel", merged.get("installKindLabel"))
+            merged["installEvidence"] = item.get("installEvidence", merged.get("installEvidence"))
+        if item.get("repoUrl") and not merged.get("repoUrl"):
+            merged["repoUrl"] = item["repoUrl"]
+        if item.get("metadataCategory") and not merged.get("metadataCategory"):
+            merged["metadataCategory"] = item["metadataCategory"]
         if item["host"] not in str(merged.get("host", "")):
             merged["host"] = "/".join(merged["availableIn"])
         if item.get("requiresSubskills"):
@@ -603,6 +886,7 @@ def main() -> int:
     capabilities.extend(scan_single_files(project_root))
     capabilities.extend(scan_cli_tools(home))
     capabilities.extend(scan_template_library(home))
+    capabilities.extend(scan_reference_records(home))
 
     deduped = unique_capabilities(capabilities)
     summary = Counter(item["sourceType"] for item in deduped)

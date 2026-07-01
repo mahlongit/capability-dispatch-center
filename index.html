@@ -81,7 +81,7 @@
 
     .app {
       display: grid;
-      grid-template-columns: 264px minmax(0, 1fr) 360px;
+      grid-template-columns: 252px minmax(0, 1fr) 340px;
       grid-template-rows: 64px minmax(0, 1fr);
       height: 100vh;
       overflow: hidden;
@@ -206,7 +206,7 @@
     }
 
     .sidebar {
-      padding-left: 24px;
+      padding-left: 18px;
       overflow: hidden;
     }
 
@@ -218,7 +218,7 @@
     }
 
     .detail {
-      padding-right: 24px;
+      padding-right: 18px;
       overflow: hidden;
     }
 
@@ -233,20 +233,21 @@
     .sidebar-panel {
       height: 100%;
       overflow: auto;
-      padding: 10px;
+      padding: 8px;
+      overscroll-behavior: contain;
     }
 
     .sidebar-section {
-      padding: 0 0 10px;
+      padding: 0 0 8px;
     }
 
     .sidebar-section + .sidebar-section {
-      padding-top: 10px;
+      padding-top: 8px;
       border-top: 1px solid var(--line);
     }
 
     .panel-title {
-      padding: 0 2px 8px;
+      padding: 0 2px 6px;
       color: var(--muted);
       font: 600 12px/1.2 var(--font-display);
       letter-spacing: .05em;
@@ -256,7 +257,7 @@
     .scene-list {
       padding: 0;
       display: grid;
-      gap: 4px;
+      gap: 2px;
       overflow: auto;
       min-height: 0;
       max-height: none;
@@ -268,8 +269,8 @@
       justify-content: space-between;
       gap: 10px;
       width: 100%;
-      min-height: 28px;
-      padding: 5px 10px;
+      min-height: 26px;
+      padding: 4px 9px;
       border: 0;
       border-radius: 8px;
       background: transparent;
@@ -295,8 +296,8 @@
     .storage p {
       margin: 0 0 8px;
       color: var(--muted);
-      font-size: 11px;
-      line-height: 1.35;
+      font-size: 10.5px;
+      line-height: 1.32;
     }
 
     .storage-grid {
@@ -306,7 +307,7 @@
     }
 
     .storage-box {
-      padding: 7px 8px;
+      padding: 6px 7px;
       border-radius: 8px;
       background: var(--panel-2);
       border: 1px solid var(--line);
@@ -314,13 +315,13 @@
 
     .storage-box strong {
       display: block;
-      font: 600 12px/1.1 var(--font-display);
+      font: 600 11px/1.08 var(--font-display);
       overflow-wrap: anywhere;
     }
 
     .storage-box span {
       color: var(--muted);
-      font-size: 10px;
+      font-size: 9.5px;
       line-height: 1.25;
       overflow-wrap: anywhere;
     }
@@ -428,7 +429,7 @@
       grid-template-columns: 50px minmax(0, 1fr) auto;
       gap: 12px;
       align-items: start;
-      padding: 14px;
+      padding: 12px;
       border-radius: 12px;
       border: 1px solid var(--line);
       background: var(--panel);
@@ -468,7 +469,7 @@
     .card p {
       margin: 0 0 12px;
       color: var(--ink-2);
-      font-size: 13px;
+      font-size: 12.5px;
     }
 
     .tags {
@@ -484,6 +485,10 @@
       border: 1px solid var(--line);
       color: var(--muted);
       font-size: 11px;
+      max-width: 210px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .score {
@@ -591,7 +596,7 @@
     }
 
     .meta-item {
-      padding: 7px 9px;
+      padding: 6px 8px;
       border-radius: 8px;
       border: 1px solid var(--line);
       background: var(--panel-2);
@@ -600,13 +605,13 @@
     .meta-item strong {
       display: block;
       color: var(--ink);
-      font-size: 11px;
+      font-size: 10.5px;
       margin-bottom: 2px;
     }
 
     .meta-item span {
       color: var(--muted);
-      font-size: 10px;
+      font-size: 9.5px;
       word-break: break-word;
       line-height: 1.45;
     }
@@ -858,7 +863,7 @@
     let sortDirection = "desc";
     let selected = null;
 
-    const sceneKeys = ["全部", "UI / 前端", "代码 / 后端", "网页 / 自动化", "视频 / 内容", "知识 / 记忆", "部署"];
+    const sceneKeys = ["全部", "UI / 前端", "代码 / 后端", "网页 / 自动化", "视频 / 内容", "知识 / 记忆", "部署", "原生自带", "后装能力", "知识参考"];
 
     const translations = {
       zh: {
@@ -915,7 +920,10 @@
           "网页 / 自动化": "网页 / 自动化",
           "视频 / 内容": "视频 / 内容",
           "知识 / 记忆": "知识 / 记忆",
-          "部署": "部署"
+          "部署": "部署",
+          "原生自带": "原生自带",
+          "后装能力": "后装能力",
+          "知识参考": "知识参考"
         }
       },
       en: {
@@ -972,7 +980,10 @@
           "网页 / 自动化": "Web / Automation",
           "视频 / 内容": "Video / Content",
           "知识 / 记忆": "Knowledge / Memory",
-          "部署": "Deployment"
+          "部署": "Deployment",
+          "原生自带": "Built-in",
+          "后装能力": "Installed",
+          "知识参考": "Reference"
         }
       }
     };
@@ -1133,6 +1144,18 @@
       return category;
     }
 
+    function installKind(item) {
+      return String(item.installKind || "").toLowerCase();
+    }
+
+    function sceneMatches(item, label) {
+      if (label === "全部") return true;
+      if (label === "原生自带") return installKind(item) === "native";
+      if (label === "后装能力") return ["user-installed", "local-tool", "plugin", "template-library"].includes(installKind(item));
+      if (label === "知识参考") return installKind(item) === "reference" || normalizeSceneLabel(item) === "知识 / 记忆";
+      return normalizeSceneLabel(item) === label;
+    }
+
     function availableHosts(item) {
       const hosts = Array.isArray(item.availableIn) && item.availableIn.length ? item.availableIn : [item.host || ""];
       return hosts.flatMap(host => String(host).split("/")).map(host => host.trim()).filter(Boolean);
@@ -1207,10 +1230,15 @@
             icon: iconText(label),
             desc: `父级能力组，已折叠 ${1} 个子项。搜索子项名称时仍会命中这个父级组。`,
             descEn: `Parent capability group with ${1} folded child item. Searching child names still returns this parent group.`,
-            tags: ["parent", item.host || "local", item.sourceType || "capability"],
+            tags: listUnique(["parent", ...(item.sceneTags || []), ...(item.tags || []), item.host || "local", item.sourceType || "capability"]),
+            sceneTags: listUnique([...(item.sceneTags || []), "父级能力"]),
             sourceCount: 1,
             childItems: [item],
             requiresSubskills: true,
+            repoUrl: item.repoUrl || "",
+            installKind: item.installKind,
+            installKindLabel: item.installKindLabel,
+            installEvidence: item.installEvidence,
           });
           continue;
         }
@@ -1218,7 +1246,9 @@
         parent.sourceCount += 1;
         parent.childItems.push(item);
         parent.availableIn = listUnique([...(parent.availableIn || []), ...availableHosts(item)]);
-        parent.tags = listUnique([...parent.tags, item.host || "", item.sourceType || ""]).filter(Boolean);
+        parent.tags = listUnique([...parent.tags, ...(item.sceneTags || []), ...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean);
+        parent.sceneTags = listUnique([...(parent.sceneTags || []), ...(item.sceneTags || []), "父级能力"]);
+        if (!parent.repoUrl && item.repoUrl) parent.repoUrl = item.repoUrl;
         parent.installedAt = String(item.installedAt || "") > String(parent.installedAt || "") ? item.installedAt : parent.installedAt;
         parent.desc = `父级能力组，已折叠 ${parent.sourceCount} 个子项。搜索子项名称时仍会命中这个父级组。`;
         parent.descEn = `Parent capability group with ${parent.sourceCount} folded child items. Searching child names still returns this parent group.`;
@@ -1239,14 +1269,16 @@
             childItems: Array.isArray(item.childItems) ? [...item.childItems] : [],
             templateItems: Array.isArray(item.templateItems) ? [...item.templateItems] : [],
             availableIn: listUnique([...(item.availableIn || []), ...availableHosts(item)]),
-            tags: listUnique([...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean),
+            tags: listUnique([...(item.sceneTags || []), ...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean),
+            sceneTags: listUnique([...(item.sceneTags || [])]),
             sourceCount: Number(item.sourceCount || 1),
           });
           continue;
         }
         const parent = merged.get(key);
         parent.availableIn = listUnique([...(parent.availableIn || []), ...(item.availableIn || []), ...availableHosts(item)]);
-        parent.tags = listUnique([...(parent.tags || []), ...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean);
+        parent.tags = listUnique([...(parent.tags || []), ...(item.sceneTags || []), ...(item.tags || []), item.host || "", item.sourceType || ""]).filter(Boolean);
+        parent.sceneTags = listUnique([...(parent.sceneTags || []), ...(item.sceneTags || [])]);
         parent.sourceCount = Number(parent.sourceCount || 1) + Number(item.sourceCount || 1);
         if (!Array.isArray(parent.childItems) || !parent.childItems.length) {
           parent.childItems = [sourceSnapshot(parent)];
@@ -1257,6 +1289,10 @@
         ];
         parent.templateItems = mergeTemplateItems([...(parent.templateItems || []), ...(item.templateItems || [])]);
         parent.requiresSubskills = Boolean(parent.requiresSubskills || item.requiresSubskills || parent.childItems.length > 1);
+        if (!parent.repoUrl && item.repoUrl) parent.repoUrl = item.repoUrl;
+        if (!parent.installKind && item.installKind) parent.installKind = item.installKind;
+        if (!parent.installKindLabel && item.installKindLabel) parent.installKindLabel = item.installKindLabel;
+        if (!parent.installEvidence && item.installEvidence) parent.installEvidence = item.installEvidence;
         if (String(item.installedAt || "") > String(parent.installedAt || "")) {
           parent.installedAt = item.installedAt;
         }
@@ -1309,10 +1345,12 @@
     function filtered() {
       const q = search.value.trim().toLowerCase();
       const rawList = capabilities.filter(item => {
-        const normalizedCategory = normalizeSceneLabel(item);
         const envOk = hostOk(item);
-        const sceneOk = activeScene === "全部" || normalizedCategory === activeScene;
-        const qOk = !q || [item.name, item.displayName, item.displayNameEn || "", item.desc || "", item.descEn || "", item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", ...(item.availableIn || []), ...item.tags].join(" ").toLowerCase().includes(q);
+        const sceneOk = sceneMatches(item, activeScene);
+        const childText = Array.isArray(item.childItems)
+          ? item.childItems.map(child => [child.name, child.displayName, child.desc, child.sourcePathDisplay].join(" ")).join(" ")
+          : "";
+        const qOk = !q || [item.name, item.displayName, item.displayNameEn || "", item.desc || "", item.descEn || "", item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", item.sourcePathDisplay || "", item.repoUrl || "", item.installKind || "", item.installKindLabel || "", item.metadataCategory || "", childText, ...(item.availableIn || []), ...(item.sceneTags || []), ...(item.tags || [])].join(" ").toLowerCase().includes(q);
         return envOk && sceneOk && qOk;
       });
       const list = aggregateParentItems(rawList);
@@ -1339,10 +1377,9 @@
 
     function renderScenes() {
       sceneList.innerHTML = sceneKeys.map((label) => {
-        const test = label === "全部" ? (() => true) : ((item) => normalizeSceneLabel(item) === label);
         const count = aggregateParentItems(capabilities.filter(item => {
           const envOk = hostOk(item);
-          return envOk && test(item);
+          return envOk && sceneMatches(item, label);
         })).length;
         return `<button class="scene-btn ${label === activeScene ? "active" : ""}" data-scene="${label}"><span>${translations[activeLang].sceneLabels[label] || label}</span><span class="scene-count">${count}</span></button>`;
       }).join("");
@@ -1356,18 +1393,20 @@
 
     function renderCards() {
       const list = filtered();
-      cards.innerHTML = list.map(item => `
+      cards.innerHTML = list.map(item => {
+        const cardTags = listUnique([...(item.sceneTags || []), ...(item.tags || [])]).slice(0, 7);
+        return `
         <article class="card ${selected && item.name === selected.name ? "active" : ""}" data-name="${item.name}">
           <div class="icon">${item.icon}</div>
           <div>
             <h3>${capabilityName(item)}</h3>
             <div class="skill-id">${item.name}</div>
             <p>${capabilityDesc(item)}</p>
-            <div class="tags">${item.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}${item.sourceCount > 1 ? `<span class="tag">${item.sourceCount} sources</span>` : ""}${Array.isArray(item.templateItems) && item.templateItems.length ? `<span class="tag">${item.templateItems.length} templates</span>` : ""}</div>
+            <div class="tags">${cardTags.map(tag => `<span class="tag">${tag}</span>`).join("")}${item.sourceCount > 1 ? `<span class="tag">${item.sourceCount} sources</span>` : ""}${Array.isArray(item.templateItems) && item.templateItems.length ? `<span class="tag">${item.templateItems.length} templates</span>` : ""}</div>
           </div>
           <div class="score">${item.score}</div>
         </article>
-      `).join("") || `<div class="panel" style="padding:18px;color:var(--muted)">${t("noMatch")}</div>`;
+      `}).join("") || `<div class="panel" style="padding:18px;color:var(--muted)">${t("noMatch")}</div>`;
 
       document.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => {
         selected = filtered().find(item => item.name === card.dataset.name);
@@ -1386,12 +1425,12 @@
         <h2>${capabilityName(selected)}</h2>
         <div class="detail-id">${selected.name}</div>
         <p>${capabilityDesc(selected)}</p>
-        <div class="tags" style="margin-top:12px">${selected.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div>
+        <div class="tags" style="margin-top:12px">${listUnique([...(selected.sceneTags || []), ...(selected.tags || [])]).map(tag => `<span class="tag">${tag}</span>`).join("")}</div>
 
         ${selected.sourcePath ? `
         <div class="block">
           <h3>${t("sourceBlock")}</h3>
-          <div class="style-note"><strong>${selected.host || "local"}</strong> · ${selected.sourceType || "capability"}<br>${selected.sourcePathDisplay || selected.sourcePath}</div>
+          <div class="style-note"><strong>${selected.host || "local"}</strong> · ${selected.sourceType || "capability"} · ${selected.installKindLabel || selected.installKind || "本机发现"}<br>${selected.sourcePathDisplay || selected.sourcePath}${selected.repoUrl ? `<br><a href="${selected.repoUrl}" target="_blank" rel="noreferrer">${selected.repoUrl}</a>` : ""}${selected.installEvidence ? `<br>${selected.installEvidence}` : ""}</div>
           ${Array.isArray(selected.availableIn) && selected.availableIn.length > 1 ? `<div class="source-list"><div class="source-entry"><strong>${t("sourceHosts")}</strong><br>${selected.availableIn.join(", ")}</div></div>` : ""}
           ${Array.isArray(selected.childItems) && selected.childItems.length ? `<div class="source-list">${selected.childItems.slice(0, 16).map(child => `<div class="source-entry">${capabilityName(child)} · ${child.name}<br>${child.sourcePathDisplay || child.sourcePath || child.host || ""}</div>`).join("")}${selected.childItems.length > 16 ? `<div class="source-entry">+ ${selected.childItems.length - 16} more sources</div>` : ""}</div>` : ""}
         </div>
