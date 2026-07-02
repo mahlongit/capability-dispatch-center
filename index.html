@@ -335,14 +335,15 @@
 
     .controls-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr);
       gap: 12px;
       align-items: center;
       flex: none;
     }
 
     .sort-panel {
-      display: flex;
+      display: grid;
+      grid-template-columns: auto minmax(250px, 1fr) auto auto;
       align-items: center;
       gap: 10px;
       min-height: 44px;
@@ -360,9 +361,10 @@
     }
 
     .sort-buttons {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(70px, auto));
       gap: 8px;
-      flex-wrap: wrap;
+      min-width: 0;
     }
 
     .sort-buttons button,
@@ -374,6 +376,7 @@
       border: 1px solid var(--line);
       color: var(--muted);
       font-weight: 700;
+      white-space: nowrap;
     }
 
     .sort-buttons button.active,
@@ -381,6 +384,13 @@
       background: var(--accent);
       border-color: var(--accent);
       color: #fff;
+    }
+
+    .sort-status {
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
     }
 
     .searchbox,
@@ -613,8 +623,9 @@
       border-color: var(--accent);
     }
 
-    .icon-button[hidden] {
-      display: none;
+    .icon-button:disabled {
+      cursor: not-allowed;
+      opacity: .55;
     }
 
     .meta-list {
@@ -772,11 +783,12 @@
         min-height: auto;
         align-items: flex-start;
         padding: 12px;
-        flex-direction: column;
+        grid-template-columns: 1fr;
       }
 
       .sort-buttons {
         width: 100%;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
       .sort-buttons button,
@@ -856,7 +868,7 @@
         <section class="sidebar-section source-meta">
           <div class="source-title-row">
             <div class="panel-title" id="sourceTitle">当前数据源</div>
-            <button class="icon-button" id="refreshRegistry" title="刷新本机能力" aria-label="刷新本机能力" hidden>↻</button>
+            <button class="icon-button" id="refreshRegistry" title="刷新本机能力" aria-label="刷新本机能力">↻</button>
           </div>
           <p id="registryStatus">启动中，正在检查本机扫描结果。</p>
           <div class="meta-list">
@@ -885,6 +897,7 @@
             <button data-sort="name" id="sortName">名称</button>
           </div>
           <button class="sort-direction" id="sortDirection" data-direction="desc">↓</button>
+          <span class="sort-status" id="sortStatus"></span>
         </div>
       </div>
       <div class="cards" id="cards"></div>
@@ -950,7 +963,7 @@
         registryCountLabel: "能力数量",
         registryTimeLabel: "扫描时间",
         refreshLabel: "刷新本机能力",
-        refreshUnavailable: "当前是静态页面，不提供本机扫描按钮。要刷新本机能力，请在本地运行 `python3 scripts/serve.py` 后打开本地页面。",
+        refreshUnavailable: "当前是静态页面，刷新按钮仅作提示，不能直接扫描本机。要刷新本机能力，请在本地运行 `python3 scripts/serve.py` 后打开本地页面。",
         refreshing: "正在刷新本机能力...",
         refreshLocalOnly: "当前页面没有本机刷新接口。请在本地运行 `python3 scripts/serve.py`，或手动运行 `python3 scripts/scan_capabilities.py`。",
         refreshFailed: "刷新失败：请确认正在通过 `python3 scripts/serve.py` 打开本地页面。",
@@ -966,6 +979,7 @@
         sortRecent: "最近使用",
         sortInstalled: "安装时间",
         sortName: "名称",
+        sortStatus: "当前",
         noMatch: "没有匹配能力。换一个关键词或场景再试。",
         detailTitle: "能力详情",
         detailEmpty: "没有可用能力",
@@ -1020,7 +1034,7 @@
         registryCountLabel: "Count",
         registryTimeLabel: "Scanned At",
         refreshLabel: "Refresh local capabilities",
-        refreshUnavailable: "This is a static page, so no local scan button is exposed. Run `python3 scripts/serve.py` locally to refresh local capabilities from the page.",
+        refreshUnavailable: "This is a static page. The refresh button is informational and cannot scan this computer. Run `python3 scripts/serve.py` locally to refresh from the page.",
         refreshing: "Refreshing local capabilities...",
         refreshLocalOnly: "No local refresh API is available on this page. Run `python3 scripts/serve.py` locally, or run `python3 scripts/scan_capabilities.py` manually.",
         refreshFailed: "Refresh failed. Confirm the page is served by `python3 scripts/serve.py`.",
@@ -1036,6 +1050,7 @@
         sortRecent: "Recent use",
         sortInstalled: "Installed",
         sortName: "Name",
+        sortStatus: "Current",
         noMatch: "No matching capability. Try another search or scene.",
         detailTitle: "Capability Detail",
         detailEmpty: "No capability available",
@@ -1079,6 +1094,7 @@
     const registryTime = document.getElementById("registryTime");
     const hintText = document.getElementById("hintText");
     const sortDirectionButton = document.getElementById("sortDirection");
+    const sortStatus = document.getElementById("sortStatus");
     const refreshRegistryButton = document.getElementById("refreshRegistry");
 
     function t(key) {
@@ -1119,6 +1135,19 @@
       const own = Date.parse(item.installedAt || 0) || 0;
       const childTimes = Array.isArray(item.childItems) ? item.childItems.map(child => Date.parse(child.installedAt || 0) || 0) : [];
       return Math.max(own, ...childTimes, 0);
+    }
+
+    function sortLabelText() {
+      if (sortBy === "installed") return t("sortInstalled");
+      if (sortBy === "name") return t("sortName");
+      return t("sortRecent");
+    }
+
+    function updateSortState() {
+      sortDirectionButton.textContent = sortDirection === "desc" ? "↓" : "↑";
+      sortDirectionButton.classList.toggle("active", sortDirection === "asc");
+      sortStatus.textContent = `${t("sortStatus")}: ${sortLabelText()} ${sortDirection === "desc" ? "↓" : "↑"}`;
+      document.querySelectorAll(".sort-buttons button").forEach(btn => btn.classList.toggle("active", btn.dataset.sort === sortBy));
     }
 
     function childMeta(child) {
@@ -1183,6 +1212,7 @@
       document.getElementById("sortRecent").textContent = t("sortRecent");
       document.getElementById("sortInstalled").textContent = t("sortInstalled");
       document.getElementById("sortName").textContent = t("sortName");
+      updateSortState();
       document.querySelectorAll(".lang-toggle button").forEach(btn => btn.classList.toggle("active", btn.dataset.lang === activeLang));
     }
 
@@ -1285,7 +1315,6 @@
     }
 
     function configureRefreshControl() {
-      refreshRegistryButton.hidden = !localRefreshAvailable;
       refreshRegistryButton.disabled = !localRefreshAvailable;
       refreshRegistryButton.title = localRefreshAvailable ? t("refreshLabel") : t("refreshUnavailable");
       refreshRegistryButton.setAttribute("aria-label", refreshRegistryButton.title);
@@ -1544,7 +1573,8 @@
         if (sortBy === "installed") {
           const aTime = installedTime(a);
           const bTime = installedTime(b);
-          return (aTime - bTime) * direction;
+          if (aTime !== bTime) return (aTime - bTime) * direction;
+          return capabilityName(a).localeCompare(capabilityName(b), activeLang === "en" ? "en" : "zh");
         }
         const aUsed = lastUsedTime(a);
         const bUsed = lastUsedTime(b);
@@ -1553,7 +1583,8 @@
         }
         const aInstalled = installedTime(a);
         const bInstalled = installedTime(b);
-        return (aInstalled - bInstalled) * direction;
+        if (aInstalled !== bInstalled) return (aInstalled - bInstalled) * direction;
+        return capabilityName(a).localeCompare(capabilityName(b), activeLang === "en" ? "en" : "zh");
       });
     }
 
@@ -1690,9 +1721,8 @@
     refreshRegistryButton.addEventListener("click", refreshLocalRegistry);
 
     document.querySelectorAll(".sort-buttons button").forEach(btn => btn.addEventListener("click", () => {
-      document.querySelectorAll(".sort-buttons button").forEach(node => node.classList.remove("active"));
-      btn.classList.add("active");
       sortBy = btn.dataset.sort;
+      updateSortState();
       const first = filtered()[0];
       if (first) selected = first;
       renderCards();
@@ -1702,7 +1732,7 @@
     sortDirectionButton.addEventListener("click", () => {
       sortDirection = sortDirection === "desc" ? "asc" : "desc";
       sortDirectionButton.dataset.direction = sortDirection;
-      sortDirectionButton.textContent = sortDirection === "desc" ? "↓" : "↑";
+      updateSortState();
       const first = filtered()[0];
       if (first) selected = first;
       renderCards();
@@ -1716,7 +1746,7 @@
       renderDetail();
     });
 
-    sortDirectionButton.textContent = "↓";
+    updateSortState();
     applyTheme("light");
     detectLocalRefresh()
       .finally(() => loadRegistry())
