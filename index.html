@@ -1530,9 +1530,9 @@
         const envOk = hostOk(item);
         const sceneOk = sceneMatches(item, activeScene);
         const childText = Array.isArray(item.childItems)
-          ? item.childItems.map(child => [child.name, child.displayName, child.desc, child.sourcePathDisplay].join(" ")).join(" ")
+          ? item.childItems.map(child => [child.name, child.displayName, child.displayNameEn, child.desc, child.descEn, child.cat, child.sourceType, child.host, ...(child.tags || []), ...(child.sceneTags || [])].join(" ")).join(" ")
           : "";
-        const qOk = !q || [item.name, item.displayName, item.displayNameEn || "", item.desc || "", item.descEn || "", item.cat, item.sourceType || "", item.host || "", item.sourcePath || "", item.sourcePathDisplay || "", item.repoUrl || "", item.installKind || "", item.installKindLabel || "", item.metadataCategory || "", item.categorySource || "", item.descSource || "", item.searchText || "", childText, ...(item.availableIn || []), ...(item.sceneTags || []), ...(item.tags || []), ...(item.localDocDisplays || [])].join(" ").toLowerCase().includes(q);
+        const qOk = !q || [item.name, item.displayName, item.displayNameEn || "", item.desc || "", item.descEn || "", item.cat, item.sourceType || "", item.host || "", item.repoUrl || "", item.baseUrl || "", (item.models || []).join(" "), item.installKind || "", item.installKindLabel || "", item.metadataCategory || "", item.categorySource || "", item.descSource || "", item.searchText || "", childText, ...(item.availableIn || []), ...(item.sceneTags || []), ...(item.tags || [])].join(" ").toLowerCase().includes(q);
         return envOk && sceneOk && qOk;
       });
       const list = aggregateParentItems(rawList);

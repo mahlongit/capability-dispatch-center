@@ -1014,24 +1014,64 @@ def scan_plugin_roots(path: Path, overrides: dict[str, object]) -> Iterable[dict
 
 def scan_cli_tools(home: Path, overrides: dict[str, object]) -> Iterable[dict[str, object]]:
     cli_dir = home / ".local" / "bin"
-    candidates = ["design-md"]
+    candidates = [
+        {
+            "name": "design-md",
+            "path": str(cli_dir / "design-md"),
+            "desc": "本地命令 `design-md`，适合列出、定位或安装 UI 模板与设计规范。",
+            "descEn": "Local `design-md` CLI for listing, locating, and installing UI templates and design guidelines.",
+        }
+    ]
+    records = overrides.get("cliToolRecords", [])
+    if isinstance(records, list):
+        candidates.extend(record for record in records if isinstance(record, dict))
     results = []
     if not cli_dir.exists():
         return results
-    for name in candidates:
-        path = cli_dir / name
+    for record in candidates:
+        name = str(record.get("name") or "").strip()
+        if not name:
+            continue
+        raw_path = str(record.get("path") or cli_dir / name)
+        path = Path(raw_path.replace("~", str(home), 1)).expanduser()
         if not path.exists():
             continue
-        results.append(
-            build_capability(
-                host="local-cli",
-                source_type="cli",
-                source_path=path,
-                raw_name=name,
-                raw_description=f"本地命令 `{name}`，适合列出、定位或安装 UI 模板与设计规范。",
-                overrides=overrides,
-            )
+        capability = build_capability(
+            host="local-cli",
+            source_type="cli",
+            source_path=path,
+            raw_name=name,
+            raw_description=str(record.get("desc") or record.get("descEn") or f"Local CLI command `{name}`."),
+            overrides=overrides,
         )
+        for source_key, target_key in (
+            ("displayName", "displayName"),
+            ("displayNameEn", "displayNameEn"),
+            ("desc", "desc"),
+            ("descEn", "descEn"),
+            ("prompt", "prompt"),
+            ("promptEn", "promptEn"),
+            ("repoUrl", "repoUrl"),
+            ("installedAt", "installedAt"),
+            ("availableIn", "availableIn"),
+            ("evidence", "installEvidence"),
+            ("sceneTags", "sceneTags"),
+        ):
+            if source_key in record and record[source_key]:
+                capability[target_key] = record[source_key]
+        capability["descSource"] = "cli-manifest"
+        capability["categorySource"] = "cli-manifest" if record.get("cat") else capability.get("categorySource", "cli-manifest")
+        capability["installKind"] = "local-tool"
+        capability["installKindLabel"] = "本地命令"
+        capability["searchText"] = " ".join([
+            str(capability.get("searchText", "")),
+            str(record.get("desc", "")),
+            str(record.get("descEn", "")),
+            str(record.get("prompt", "")),
+            str(record.get("promptEn", "")),
+            str(record.get("evidence", "")),
+        ]).strip()
+        results.append(capability)
     return results
 
 
@@ -1140,6 +1180,93 @@ def scan_reference_records(home: Path, overrides: dict[str, object]) -> Iterable
                 evidence=str(record.get("evidence") or "capability-overrides.json"),
             )
         )
+    return results
+
+
+def external_provider_capability(record: dict[str, object]) -> dict[str, object] | None:
+    name = str(record.get("name") or "").strip()
+    if not name:
+        return None
+    display_name = str(record.get("displayName") or slug_to_title(name))
+    display_name_en = str(record.get("displayNameEn") or display_name)
+    category = str(record.get("cat") or "网页 / 自动化")
+    description_zh = str(record.get("desc") or default_description("external-api-provider", "external-api-provider", name)[0])
+    description_en = str(record.get("descEn") or default_description("external-api-provider", "external-api-provider", name)[1])
+    repo_url = str(record.get("repoUrl") or "")
+    evidence = str(record.get("evidence") or "capability-overrides.json")
+    prompt_zh = str(record.get("prompt") or build_prompts(display_name, description_zh, description_en, "external-api-provider", "external-api-provider", False)[0])
+    prompt_en = str(record.get("promptEn") or build_prompts(display_name, description_zh, description_en, "external-api-provider", "external-api-provider", False)[1])
+    models = record.get("models") if isinstance(record.get("models"), list) else []
+    scene_tags = infer_scene_tags(
+        raw_name=name,
+        category=category,
+        host="external-api-provider",
+        source_type="external-api-provider",
+        metadata={"das.upstream": repo_url, "das.category": "automation"},
+        description=description_zh,
+        repo_url=repo_url,
+        install_label="外部 Provider",
+    )
+    scene_tags = list(dict.fromkeys([*scene_tags, *(str(tag) for tag in record.get("sceneTags", []) if isinstance(record.get("sceneTags"), list))]))
+    search_parts = [
+        name,
+        display_name,
+        display_name_en,
+        description_zh,
+        description_en,
+        repo_url,
+        str(record.get("baseUrl") or ""),
+        " ".join(str(model) for model in models),
+        evidence,
+    ]
+    return {
+        "name": name,
+        "displayName": display_name,
+        "displayNameEn": display_name_en,
+        "cat": category,
+        "env": ["external"],
+        "icon": icon_for(display_name),
+        "desc": description_zh,
+        "descEn": description_en,
+        "tags": list(dict.fromkeys(["external-api-provider", str(record.get("providerType") or "provider"), *scene_tags[:8]])),
+        "prompt": prompt_zh,
+        "promptEn": prompt_en,
+        "sourceType": "external-api-provider",
+        "host": "external-api-provider",
+        "sourcePath": evidence,
+        "sourcePathDisplay": evidence,
+        "installedAt": str(record.get("installedAt") or datetime.now(timezone.utc).isoformat()),
+        "availableIn": record.get("availableIn") if isinstance(record.get("availableIn"), list) else ["codex", "hermes", "external-api-provider"],
+        "requiresSubskills": False,
+        "installKind": "external-provider",
+        "installKindLabel": "外部 Provider",
+        "sceneTags": scene_tags,
+        "repoUrl": repo_url,
+        "metadataCategory": "external-provider",
+        "installEvidence": evidence,
+        "categorySource": "external-provider-manifest",
+        "descSource": "external-provider-manifest",
+        "validationStatus": str(record.get("validationStatus") or "pending-validation"),
+        "defaultRoute": str(record.get("defaultRoute") or "named-only"),
+        "baseUrl": str(record.get("baseUrl") or ""),
+        "models": models,
+        "localDocs": [],
+        "localDocDisplays": [],
+        "searchText": " ".join(search_parts),
+    }
+
+
+def scan_external_provider_records(overrides: dict[str, object]) -> Iterable[dict[str, object]]:
+    records = overrides.get("externalProviderRecords", [])
+    if not isinstance(records, list):
+        return []
+    results = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        capability = external_provider_capability(record)
+        if capability:
+            results.append(capability)
     return results
 
 
@@ -1317,6 +1444,7 @@ def main() -> int:
     capabilities.extend(scan_template_library(home, overrides))
     capabilities.extend(scan_content_sources(home, overrides))
     capabilities.extend(scan_reference_records(home, overrides))
+    capabilities.extend(scan_external_provider_records(overrides))
 
     deduped = unique_capabilities(capabilities)
     summary = Counter(item["sourceType"] for item in deduped)

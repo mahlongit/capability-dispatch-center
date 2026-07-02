@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 HIGH_RISK_CATEGORIES = {"UI / 前端", "部署", "知识 / 记忆", "网页 / 自动化"}
+COMMON_CAPABILITY_TYPES = {"skill", "plugin", "cli", "external-api-provider", "content-source"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -69,6 +70,27 @@ def issue_item(item: dict[str, object], reason: str) -> dict[str, object]:
     }
 
 
+def has_chinese(value: str) -> bool:
+    return bool(re.search(r"[\u4e00-\u9fff]", value))
+
+
+def has_usage_language(item: dict[str, object]) -> bool:
+    text = " ".join(str(item.get(field, "")) for field in ("desc", "prompt", "installEvidence"))
+    return has_chinese(text) and any(token in text for token in ("什么时候", "使用", "用途", "调用", "不要", "默认", "父级", "子级", "外部", "本地"))
+
+
+def has_shortest_usage(item: dict[str, object]) -> bool:
+    text = " ".join(str(item.get(field, "")) for field in ("prompt", "desc", "installEvidence"))
+    return any(token in text for token in ("最短", "调用方式", "用法", "rtk ", "OpenAI-compatible", "SKILL.md", "README", "provider"))
+
+
+def has_parent_child_policy(item: dict[str, object]) -> bool:
+    text = " ".join(str(item.get(field, "")) for field in ("desc", "prompt", "installEvidence", "searchText"))
+    if item.get("requiresSubskills") or int(item.get("childCount") or 0) > 0 or int(item.get("sourceCount") or 1) > 1:
+        return any(token in text for token in ("父级", "子级", "子项", "child", "parent", "专项", "默认"))
+    return True
+
+
 def audit(items: list[dict[str, object]], query: str) -> dict[str, object]:
     anomalies: dict[str, list[dict[str, object]]] = {
         "missingRepoUrl": [],
@@ -78,6 +100,9 @@ def audit(items: list[dict[str, object]], query: str) -> dict[str, object]:
         "sameNameMultiHost": [],
         "parentSourceCountAnomaly": [],
         "missingLocalDocs": [],
+        "missingChineseUsage": [],
+        "missingShortestUsage": [],
+        "missingParentChildPolicy": [],
     }
 
     grouped_names: dict[str, list[dict[str, object]]] = defaultdict(list)
@@ -92,7 +117,7 @@ def audit(items: list[dict[str, object]], query: str) -> dict[str, object]:
         available = item.get("availableIn") if isinstance(item.get("availableIn"), list) else []
         local_docs = item.get("localDocs") if isinstance(item.get("localDocs"), list) else []
 
-        if source_type in {"skill", "agent", "plugin", "reference"} and not repo_url:
+        if source_type in {"skill", "agent", "plugin", "reference", "external-api-provider"} and not repo_url:
             anomalies["missingRepoUrl"].append(issue_item(item, "source usually benefits from a repo URL but none was found locally"))
         if desc_source == "default" or len(desc.strip()) < 42:
             anomalies["shortOrGenericDescription"].append(issue_item(item, "description is short or generated from default fallback"))
@@ -106,6 +131,12 @@ def audit(items: list[dict[str, object]], query: str) -> dict[str, object]:
             anomalies["parentSourceCountAnomaly"].append(issue_item(item, "sourceCount is high enough to require manual review"))
         if install_kind == "user-installed" and source_type == "skill" and not local_docs:
             anomalies["missingLocalDocs"].append(issue_item(item, "user-installed skill has no local README/USAGE beside SKILL.md"))
+        if source_type in COMMON_CAPABILITY_TYPES and not has_usage_language(item):
+            anomalies["missingChineseUsage"].append(issue_item(item, "common capability lacks Chinese when-to-use / when-not-to-use wording"))
+        if source_type in COMMON_CAPABILITY_TYPES and not has_shortest_usage(item):
+            anomalies["missingShortestUsage"].append(issue_item(item, "common capability lacks a shortest usage path"))
+        if source_type in COMMON_CAPABILITY_TYPES and not has_parent_child_policy(item):
+            anomalies["missingParentChildPolicy"].append(issue_item(item, "parent/toolkit capability lacks parent-child routing wording"))
 
     for key, records in grouped_names.items():
         hosts = sorted({str(item.get("host") or "") for item in records})

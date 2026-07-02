@@ -23,8 +23,72 @@
     "design-md-templates": {
       "cat": "UI / 前端",
       "reason": "Local UI/design template library."
+    },
+    "rtk": {
+      "cat": "代码 / 后端",
+      "reason": "Local CLI for compressing large command output and reducing token usage."
+    },
+    "agnes-ai": {
+      "cat": "网页 / 自动化",
+      "reason": "External OpenAI-compatible multimodal API provider, not a local executable skill."
+    },
+    "ponytail": {
+      "cat": "代码 / 后端",
+      "reason": "Coding guardrail plugin focused on minimal viable code and anti-overengineering."
+    },
+    "karpathy-guidelines": {
+      "cat": "代码 / 后端",
+      "reason": "Coding and code-review guideline skill, not a UI implementation skill."
+    },
+    "interface-design": {
+      "cat": "UI / 前端",
+      "reason": "Interface design review and interaction quality skill."
+    },
+    "agent-reach": {
+      "cat": "网页 / 自动化",
+      "reason": "Default web/platform reading and reachability capability."
     }
   },
+  "cliToolRecords": [
+    {
+      "name": "rtk",
+      "displayName": "RTK",
+      "displayNameEn": "RTK",
+      "cat": "代码 / 后端",
+      "path": "~/.local/bin/rtk",
+      "repoUrl": "https://github.com/rtk-ai/rtk",
+      "installedAt": "2026-07-02T04:45:42+08:00",
+      "availableIn": ["codex", "hermes", "local-cli"],
+      "desc": "RTK 是本地命令输出压缩工具，用于大目录、大日志、大测试输出、大 git diff 或大范围 rg 时减少 token 消耗。关键规则、SKILL.md、配置和精确代码片段仍应读取原文，不做无脑压缩。",
+      "descEn": "RTK is a local command-output compression CLI for large directory listings, logs, tests, git diffs, and broad searches. Do not use it for rules, SKILL.md, configs, or exact source snippets that require verbatim reading.",
+      "prompt": "当命令可能产生大量输出时优先用 RTK，例如 `rtk ls`、`rtk rg`、`rtk git diff`、`rtk npm test`。读取规则、SKILL.md、prompt、配置和精确代码片段时不要用 RTK 替代原文。",
+      "promptEn": "Use RTK for commands likely to produce large output, such as `rtk ls`, `rtk rg`, `rtk git diff`, and `rtk npm test`. Do not use it for rules, SKILL.md, prompts, configs, or exact code snippets.",
+      "evidence": "thread 019eea88-df56-73d1-ba89-6e113e0d2665; installed rtk 0.43.0 and configured Hermes/Codex selective rule",
+      "sceneTags": ["token compression", "command output", "local cli", "selective"]
+    }
+  ],
+  "externalProviderRecords": [
+    {
+      "name": "agnes-ai",
+      "displayName": "Agnes AI",
+      "displayNameEn": "Agnes AI",
+      "cat": "网页 / 自动化",
+      "providerType": "external-api-provider",
+      "repoUrl": "https://agnes-ai.com/en/docs/quickstart",
+      "baseUrl": "https://apihub.agnes-ai.com/v1",
+      "models": ["agnes-2.0-flash", "agnes-image-2.1-flash", "agnes-video-v2.0"],
+      "installedAt": "2026-07-02T00:00:00+08:00",
+      "availableIn": ["codex", "hermes", "external-api-provider"],
+      "desc": "Agnes AI 是外部 OpenAI-compatible 全模态 API Provider，可作为低成本文本、图像、视频和多模态实验候选。当前应标为待 API key 本机实测，不默认替换 CDX/Hermes 主模型。",
+      "descEn": "Agnes AI is an external OpenAI-compatible multimodal API provider for low-cost text, image, video, and multimodal experiments. Treat it as pending local API-key validation and do not replace the primary CDX/Hermes model by default.",
+      "prompt": "需要低成本外部模型或多模态实验时，可把 Agnes AI 配成 OpenAI-compatible provider。先确认 API key、限流、隐私和质量；不要默认覆盖现有主模型。",
+      "promptEn": "Use Agnes AI as an OpenAI-compatible provider for low-cost external model or multimodal experiments. Confirm API key, rate limits, privacy, and quality first; do not overwrite the current primary model by default.",
+      "evidence": "thread 019eea88-df56-73d1-ba89-6e113e0d2665; official docs checked for quickstart/token plan/Hermes/Codex guides",
+      "validationStatus": "pending-api-key-test",
+      "defaultRoute": "named-only",
+      "sceneTags": ["OpenAI-compatible", "multimodal", "external provider", "pending validation"]
+    }
+  ],
   "contentSourceRecords": [
     {
       "name": "agency-agents-zh",
